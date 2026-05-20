@@ -83,7 +83,6 @@ packages/shared/*
 # DATABASE / PRIVATE
 # =========================================
 
-packages/shared/schema.sql
 packages/shared/schema_organized.sql
 
 # =========================================
