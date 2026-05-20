@@ -56,8 +56,12 @@ export type CartItem = {
     unitPriceCents: number;
     lineTotalCents: number;
     note: string | null;
-    // Stable frontend/render ordering.
+
+    /**
+     * Stable frontend and render ordering.
+     */
     position: number;
+
     sourceChatMessageId: string | null;
     sourceActionIndex: number | null;
     sourceChatMessageActionId: string | null;
@@ -85,8 +89,12 @@ export type ChatMessage = {
     chatSessionId: string;
     role: "user" | "assistant" | "system";
     content: string;
-    // Structured assistant/user action payload.
+
+    /**
+     * Structured assistant and user action payload.
+     */
     parsedAction: Record<string, unknown> | null;
+
     errorType: string | null;
     createdAt: string;
 };
@@ -95,8 +103,12 @@ export type ChatMessageAction = {
     id: string;
     chatMessageId: string;
     cartId: string | null;
-    // Normalized orchestration ordering.
+
+    /**
+     * Normalized orchestration ordering.
+     */
     actionIndex: number;
+
     actionType: string;
     intent: string;
     status: string;
@@ -108,8 +120,12 @@ export type ChatMessageAction = {
     errorMessage: string | null;
     confidence: number;
     dependsOn: number[];
-    // Cross-action/cart reference linkage.
+
+    /**
+     * Cross-action and cart reference linkage.
+     */
     referenceType: string | null;
+
     referenceActionIndex: number | null;
     referenceCartItemId: string | null;
     referenceCartPosition: number | null;

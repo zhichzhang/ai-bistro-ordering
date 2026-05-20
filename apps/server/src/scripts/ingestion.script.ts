@@ -10,15 +10,14 @@ import { throwIfError }
     from "../db/repositories/base.repository";
 
 import type {
-    PromptMenuContext,
     PromptMenuCategory,
+    PromptMenuContext,
     PromptMenuItem,
 } from "../types/menu.types";
 
 function priceToCents(
     price: number
 ): number {
-
     return Math.round(
         price * 100
     );
@@ -27,7 +26,6 @@ function priceToCents(
 function normalizeCode(
     value: string
 ): string {
-
     return value
         .toLowerCase()
         .trim()
@@ -38,14 +36,12 @@ function buildModifierGroupCode(
     itemId: string,
     groupName: string
 ): string {
-
     return `${itemId}__${normalizeCode(groupName)}`;
 }
 
 async function upsertCategory(
     category: PromptMenuCategory
 ) {
-
     const { data, error } =
         await supabase
             .from("categories")
@@ -83,7 +79,6 @@ async function upsertMenuItem(
     categoryId: string,
     sortOrder: number
 ) {
-
     const { error } =
         await supabase
             .from("menu_items")
@@ -124,7 +119,6 @@ async function upsertModifierGroup(
     itemId: string,
     groupName: string
 ) {
-
     const code =
         buildModifierGroupCode(
             itemId,
@@ -173,7 +167,6 @@ async function upsertModifierOption(
     optionValue: string,
     sortOrder: number
 ) {
-
     const { error } =
         await supabase
             .from("modifier_options")
@@ -209,7 +202,6 @@ async function linkItemAndModifierGroup(
     itemId: string,
     modifierGroupId: string
 ) {
-
     const { error } =
         await supabase
             .from("menu_item_modifier_groups")
@@ -231,11 +223,7 @@ async function linkItemAndModifierGroup(
 }
 
 async function main() {
-
-    //
-    // monorepo-safe path
-    //
-
+    // Monorepo-safe shared menu path.
     const menuPath =
         path.resolve(
             process.cwd(),
@@ -251,12 +239,8 @@ async function main() {
     const menu: PromptMenuContext =
         JSON.parse(raw);
 
-    //
-    // categories + items
-    //
-
+    // Seed categories and menu items.
     for (const category of menu.categories) {
-
         const categoryRow =
             await upsertCategory(
                 category
@@ -267,7 +251,6 @@ async function main() {
             itemIndex < category.items.length;
             itemIndex++
         ) {
-
             const item =
                 category.items[itemIndex];
 
@@ -277,10 +260,7 @@ async function main() {
                 (item as any).sort_order ?? itemIndex
             );
 
-            //
-            // modifiers
-            //
-
+            // Seed modifier groups and options.
             const modifierEntries =
                 Object.entries(
                     item.modifiers ?? {}
@@ -292,7 +272,6 @@ async function main() {
                     options,
                 ] of modifierEntries
                 ) {
-
                 const groupRow =
                     await upsertModifierGroup(
                         item.id,
@@ -309,7 +288,6 @@ async function main() {
                     optionIndex < options.length;
                     optionIndex++
                 ) {
-
                     const option =
                         options[optionIndex];
 
@@ -323,21 +301,15 @@ async function main() {
         }
     }
 
-    //
-    // aliases
-    //
-
+    // Seed semantic aliases.
     if (menu.aliases) {
-
         for (
             const [
                 alias,
                 itemIds,
             ] of Object.entries(menu.aliases)
             ) {
-
             for (const itemId of itemIds) {
-
                 const { error } =
                     await supabase
                         .from("menu_aliases")
@@ -366,7 +338,6 @@ async function main() {
 }
 
 main().catch((err) => {
-
     console.error(
         "Failed to seed menu:",
         err

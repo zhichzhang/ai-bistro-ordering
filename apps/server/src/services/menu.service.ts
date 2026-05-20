@@ -1,8 +1,27 @@
 // apps/server/src/services/menu.service.ts
+
 import { MenuRepository } from "../db/repositories/menu.repository";
-import { toCategory, toMenuItem, toModifierGroup, toModifierOption } from "../mappers/menu.mapper";
-import type { Category, MenuItem, ModifierGroup, ModifierOption } from "../types/domain.types";
-import type { MenuMatchResult, PromptMenuCategory, PromptMenuContext, PromptMenuItem } from "../types/menu.types";
+
+import {
+    toCategory,
+    toMenuItem,
+    toModifierGroup,
+    toModifierOption,
+} from "../mappers/menu.mapper";
+
+import type {
+    Category,
+    MenuItem,
+    ModifierGroup,
+    ModifierOption,
+} from "../types/domain.types";
+
+import type {
+    MenuMatchResult,
+    PromptMenuCategory,
+    PromptMenuContext,
+    PromptMenuItem,
+} from "../types/menu.types";
 
 const RESTAURANT_NAME = "Grove & Grill";
 
@@ -30,9 +49,8 @@ const STATIC_PROMPT_ALIASES: Record<string, string[]> = {
 function addAlias(
     aliases: Record<string, string[]>,
     alias: string,
-    itemId: string,
+    itemId: string
 ): void {
-
     const normalizedAlias = normalizeLookupKey(alias);
 
     if (!normalizedAlias) {
@@ -53,11 +71,9 @@ function addAlias(
  */
 function mergeAliases(
     target: Record<string, string[]>,
-    source: Record<string, string[]>,
+    source: Record<string, string[]>
 ): void {
-
     for (const [alias, itemIds] of Object.entries(source)) {
-
         const normalizedAlias =
             normalizeLookupKey(alias);
 
@@ -66,7 +82,6 @@ function mergeAliases(
         }
 
         for (const itemId of itemIds) {
-
             if (!target[normalizedAlias].includes(itemId)) {
                 target[normalizedAlias].push(itemId);
             }
@@ -80,11 +95,9 @@ function mergeAliases(
 function buildAliases(
     items: PromptMenuItem[]
 ): Record<string, string[]> {
-
     const aliases: Record<string, string[]> = {};
 
     for (const item of items) {
-
         // Full semantic item name.
         addAlias(aliases, item.name, item.id);
 
@@ -92,7 +105,6 @@ function buildAliases(
         const tokens = normalizeLookupKey(item.name).split(" ");
 
         for (const token of tokens) {
-
             if (token.length < 3) {
                 continue;
             }
@@ -107,16 +119,19 @@ function buildAliases(
 export class MenuService {
     static async listCategories(): Promise<Category[]> {
         const rows = await MenuRepository.listCategories();
+
         return rows.map(toCategory);
     }
 
     static async listMenuItems(): Promise<MenuItem[]> {
         const rows = await MenuRepository.listMenuItems();
+
         return rows.map(toMenuItem);
     }
 
     static async getMenuItemById(id: string): Promise<MenuItem | null> {
         const row = await MenuRepository.getMenuItemById(id);
+
         return row ? toMenuItem(row) : null;
     }
 
@@ -153,9 +168,11 @@ export class MenuService {
                 return a.sortOrder - b.sortOrder;
             });
 
-        const modifierGroups = modifierGroupRows.map(toModifierGroup);
+        const modifierGroups =
+            modifierGroupRows.map(toModifierGroup);
 
-        const modifierOptions = modifierOptionRows.map(toModifierOption);
+        const modifierOptions =
+            modifierOptionRows.map(toModifierOption);
 
         const modifierGroupById = new Map<string, ModifierGroup>(
             modifierGroups.map((group) => [group.id, group])
@@ -202,16 +219,17 @@ export class MenuService {
         }));
 
         // Build semantic aliases dynamically from current menu data.
-        const allItems = promptCategories.flatMap((category) => category.items);
+        const allItems = promptCategories.flatMap(
+            (category) => category.items
+        );
 
-        const aliases = buildAliases(allItems);
+        const aliases =
+            buildAliases(allItems);
 
         mergeAliases(
             aliases,
             STATIC_PROMPT_ALIASES
         );
-
-        console.log(aliases)
 
         return {
             restaurant_name: RESTAURANT_NAME,
@@ -221,11 +239,16 @@ export class MenuService {
     }
 
     static async getPromptMenuContextJson(): Promise<string> {
-        return JSON.stringify(await this.getPromptMenuContext(), null, 2);
+        return JSON.stringify(
+            await this.getPromptMenuContext(),
+            null,
+            2
+        );
     }
 
     static async getPromptMenuItems(): Promise<PromptMenuItem[]> {
-        const context = await this.getPromptMenuContext();
+        const context =
+            await this.getPromptMenuContext();
 
         return context.categories.flatMap(
             (category: PromptMenuCategory) => category.items
@@ -233,40 +256,70 @@ export class MenuService {
     }
 
     static async getPromptCategories(): Promise<PromptMenuCategory[]> {
-        const context = await this.getPromptMenuContext();
+        const context =
+            await this.getPromptMenuContext();
+
         return context.categories;
     }
 
-    static async getPromptMenuItemById(itemId: string): Promise<PromptMenuItem | null> {
-        const items = await this.getPromptMenuItems();
-        return items.find((item) => item.id === itemId) ?? null;
+    static async getPromptMenuItemById(
+        itemId: string
+    ): Promise<PromptMenuItem | null> {
+        const items =
+            await this.getPromptMenuItems();
+
+        return items.find(
+            (item) => item.id === itemId
+        ) ?? null;
     }
 
-    static async getAllowedModifiersForItem(itemId: string): Promise<Record<string, string[]> | null> {
-        const item = await this.getPromptMenuItemById(itemId);
+    static async getAllowedModifiersForItem(
+        itemId: string
+    ): Promise<Record<string, string[]> | null> {
+        const item =
+            await this.getPromptMenuItemById(itemId);
+
         return item ? item.modifiers : null;
     }
 
-    static async isModifierAllowed(itemId: string, modifierName: string, modifierValue: string): Promise<boolean> {
-        const modifiers = await this.getAllowedModifiersForItem(itemId);
+    static async isModifierAllowed(
+        itemId: string,
+        modifierName: string,
+        modifierValue: string
+    ): Promise<boolean> {
+        const modifiers =
+            await this.getAllowedModifiersForItem(itemId);
+
         if (!modifiers) {
             return false;
         }
-        const allowedValues = modifiers[normalizeLookupKey(modifierName)];
+
+        const allowedValues =
+            modifiers[normalizeLookupKey(modifierName)];
+
         if (!allowedValues) {
             return false;
         }
-        return allowedValues.includes(normalizeLookupKey(modifierValue));
+
+        return allowedValues.includes(
+            normalizeLookupKey(modifierValue)
+        );
     }
 
-    static async findMenuItemCandidates(query: string): Promise<PromptMenuItem[]> {
-        const normalizedQuery = normalizeLookupKey(query);
+    static async findMenuItemCandidates(
+        query: string
+    ): Promise<PromptMenuItem[]> {
+        const normalizedQuery =
+            normalizeLookupKey(query);
 
-        const context = await this.getPromptMenuContext();
+        const context =
+            await this.getPromptMenuContext();
 
-        const items: PromptMenuItem[] = context.categories.flatMap(
-            (category: PromptMenuCategory): PromptMenuItem[] => category.items
-        );
+        const items: PromptMenuItem[] =
+            context.categories.flatMap(
+                (category: PromptMenuCategory): PromptMenuItem[] =>
+                    category.items
+            );
 
         const exactIdMatches = items.filter(
             (item: PromptMenuItem) =>
@@ -277,7 +330,8 @@ export class MenuService {
             return exactIdMatches;
         }
 
-        const aliasMatches = context.aliases[normalizedQuery];
+        const aliasMatches =
+            context.aliases[normalizedQuery];
 
         if (aliasMatches?.length) {
             const matchedByAlias = items.filter(
@@ -301,25 +355,27 @@ export class MenuService {
 
         const partialNameMatches = items.filter(
             (item: PromptMenuItem) => {
-
                 const itemName =
                     normalizeLookupKey(item.name);
 
                 const itemTokens =
                     itemName.split(" ");
 
-                return (
-                    itemTokens.includes(normalizedQuery)
-                );
+                return itemTokens.includes(normalizedQuery);
             }
         );
 
         return dedupeById(partialNameMatches);
     }
 
-    static async resolveMenuItem(query: string): Promise<MenuMatchResult> {
-        const normalizedQuery = normalizeLookupKey(query);
-        const candidates = await this.findMenuItemCandidates(query);
+    static async resolveMenuItem(
+        query: string
+    ): Promise<MenuMatchResult> {
+        const normalizedQuery =
+            normalizeLookupKey(query);
+
+        const candidates =
+            await this.findMenuItemCandidates(query);
 
         // Single candidate should resolve immediately without clarification.
         if (candidates.length === 1) {
@@ -343,9 +399,8 @@ export class MenuService {
 
     static async buildCompleteModifiers(
         menuItemId: string,
-        partialModifiers: Record<string, string>,
+        partialModifiers: Record<string, string>
     ): Promise<Record<string, string>> {
-
         const completed: Record<string, string> = {
             ...partialModifiers,
         };
@@ -356,10 +411,7 @@ export class MenuService {
         const modifierOptions =
             await MenuRepository.listModifierOptions();
 
-        //
-        // all groups for this menu item
-        //
-
+        // All groups associated with the menu item.
         const groupsForMenuItem =
             modifierGroups.filter(
                 (group) =>
@@ -369,25 +421,18 @@ export class MenuService {
             );
 
         for (const group of groupsForMenuItem) {
-
             const normalizedGroup =
                 group.code.replace(
                     `${menuItemId}__`,
                     ""
                 );
 
-            //
-            // preserve explicit modifier
-            //
-
+            // Preserve explicit modifier selections.
             if (completed[normalizedGroup]) {
                 continue;
             }
 
-            //
-            // default option = sort_order 0
-            //
-
+            // Default option resolves to the first sorted modifier option.
             const defaultOption =
                 modifierOptions
                     .filter(
@@ -402,7 +447,6 @@ export class MenuService {
                     )[0];
 
             if (defaultOption) {
-
                 completed[normalizedGroup] =
                     defaultOption.code;
             }
@@ -418,7 +462,6 @@ function buildPromptModifiersForItem(
     modifierGroupById: Map<string, ModifierGroup>,
     modifierOptionsByGroupId: Map<string, ModifierOption[]>
 ): Record<string, string[]> {
-
     const modifierGroupIds =
         modifierGroupIdsByMenuItemId.get(
             menuItemId
@@ -426,7 +469,6 @@ function buildPromptModifiersForItem(
 
     const sortedGroupIds =
         [...modifierGroupIds].sort((a, b) => {
-
             const groupA =
                 modifierGroupById.get(a);
 
@@ -444,7 +486,6 @@ function buildPromptModifiersForItem(
         Record<string, string[]> = {};
 
     for (const modifierGroupId of sortedGroupIds) {
-
         const group =
             modifierGroupById.get(
                 modifierGroupId
@@ -467,12 +508,11 @@ function buildPromptModifiersForItem(
                         b.sortOrder
                 );
 
-        //
-        // IMPORTANT:
-        // frontend-facing semantic name
-        // NOT canonical persistence code
-        //
-
+        /**
+         * IMPORTANT:
+         * frontend-facing semantic name,
+         * not canonical persistence code.
+         */
         result[group.name] =
             options.map(
                 (option) =>
@@ -483,17 +523,24 @@ function buildPromptModifiersForItem(
     return result;
 }
 
-function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
+function groupBy<T, K>(
+    items: T[],
+    keyFn: (item: T) => K
+): Map<K, T[]> {
     const map = new Map<K, T[]>();
+
     for (const item of items) {
         const key = keyFn(item);
+
         const bucket = map.get(key);
+
         if (bucket) {
             bucket.push(item);
         } else {
             map.set(key, [item]);
         }
     }
+
     return map;
 }
 
@@ -503,16 +550,21 @@ function groupByArray<T, K, V>(
     valueFn: (item: T) => V
 ): Map<K, V[]> {
     const map = new Map<K, V[]>();
+
     for (const item of items) {
         const key = keyFn(item);
+
         const value = valueFn(item);
+
         const bucket = map.get(key);
+
         if (bucket) {
             bucket.push(value);
         } else {
             map.set(key, [value]);
         }
     }
+
     return map;
 }
 
@@ -525,16 +577,23 @@ function normalizeLookupKey(value: string): string {
         .replace(/\s+/g, " ");
 }
 
-function dedupeById(items: PromptMenuItem[]): PromptMenuItem[] {
+function dedupeById(
+    items: PromptMenuItem[]
+): PromptMenuItem[] {
     const seen = new Set<string>();
+
     const result: PromptMenuItem[] = [];
+
     for (const item of items) {
         if (seen.has(item.id)) {
             continue;
         }
+
         seen.add(item.id);
+
         result.push(item);
     }
+
     return result;
 }
 

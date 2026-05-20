@@ -32,13 +32,16 @@ export type AssistantMessagePayload = {
     message?: string;
 };
 
-// Prompt-facing cart context used for AI orchestration.
+/**
+ * Prompt-facing cart context used for AI orchestration.
+ */
 export type PromptCartItemContext = {
     position: number;
     cart_item_id: string;
     menu_item_id: string;
     name: string;
     quantity: number;
+
     modifiers: {
         name: string;
         value: string;

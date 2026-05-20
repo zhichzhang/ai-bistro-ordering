@@ -1,27 +1,14 @@
-import { create }
-    from "zustand";
+import { create } from "zustand";
 
-import type {
-    PromptMenuContext,
-} from "../types/menu.types";
-
-import type {
-    CartContextDto,
-} from "../types/cart.types";
-
-import type {
-    AppState,
-} from "../types/app-state.types";
+import type { PromptMenuContext } from "../types/menu.types";
+import type { CartContextDto } from "../types/cart.types";
+import type { AppState } from "../types/app-state.types";
 
 export const useAppStore =
     create<AppState>((set) => ({
-
         menu: null,
-
         cartId: null,
-
         sessionId: null,
-
         cart: null,
 
         setMenu: (

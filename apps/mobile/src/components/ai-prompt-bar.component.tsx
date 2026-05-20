@@ -1,7 +1,4 @@
-import React, {
-    useEffect,
-    useRef,
-} from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import {
     ActivityIndicator,
@@ -14,20 +11,13 @@ import {
     View,
 } from 'react-native';
 
-import {
-    Ionicons,
-} from '@expo/vector-icons';
-
-import {
-    LinearGradient,
-} from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type Props = {
     value: string;
 
-    onChange: (
-        v: string
-    ) => void;
+    onChange: (v: string) => void;
 
     onSubmit: () => void;
 
@@ -36,6 +26,9 @@ type Props = {
     disabled?: boolean;
 };
 
+/**
+ * AI input bar with animated loading state transitions.
+ */
 export default function AIPromptBar({
                                         value,
                                         onChange,
@@ -43,16 +36,13 @@ export default function AIPromptBar({
                                         loading = false,
                                         disabled = false,
                                     }: Props) {
-
     const sweepAnim =
         useRef(
             new Animated.Value(-220)
         ).current;
 
     useEffect(() => {
-
         if (!loading) {
-
             sweepAnim.stopAnimation();
 
             sweepAnim.setValue(-220);
@@ -66,12 +56,8 @@ export default function AIPromptBar({
                     sweepAnim,
                     {
                         toValue: 420,
-
                         duration: 1600,
-
-                        easing:
-                        Easing.linear,
-
+                        easing: Easing.linear,
                         useNativeDriver: true,
                     }
                 )
@@ -82,7 +68,6 @@ export default function AIPromptBar({
         return () => {
             loop.stop();
         };
-
     }, [
         loading,
         sweepAnim,
@@ -102,11 +87,9 @@ export default function AIPromptBar({
                 styles.inputWrapLoading,
             ]}
         >
-
             {
                 loading ? (
                     <View style={styles.loadingContainer}>
-
                         <Ionicons
                             name="sparkles"
                             size={16}
@@ -122,11 +105,9 @@ export default function AIPromptBar({
                         <Text style={styles.loadingText}>
                             Updating your order...
                         </Text>
-
                     </View>
                 ) : (
                     <>
-
                         <Ionicons
                             name="sparkles-outline"
                             size={18}
@@ -160,21 +141,17 @@ export default function AIPromptBar({
                                 color="#FFFFFF"
                             />
                         </Pressable>
-
                     </>
                 )
             }
-
         </View>
     );
 
     return (
         <View style={styles.container}>
-
             {
                 loading ? (
                     <View style={styles.gradientWrapper}>
-
                         <Animated.View
                             style={[
                                 styles.rotatingGradient,
@@ -189,21 +166,14 @@ export default function AIPromptBar({
                                 },
                             ]}
                         >
-
                             <LinearGradient
                                 colors={[
                                     'transparent',
-
                                     'rgba(143,163,139,0.00)',
-
                                     'rgba(143,163,139,0.12)',
-
                                     '#557153',
-
                                     'rgba(143,163,139,0.12)',
-
                                     'rgba(143,163,139,0.00)',
-
                                     'transparent',
                                 ]}
                                 locations={[
@@ -225,32 +195,27 @@ export default function AIPromptBar({
                                 }}
                                 style={styles.gradient}
                             />
-
                         </Animated.View>
 
                         <View style={styles.gradientMask}>
                             {content}
                         </View>
-
                     </View>
                 ) : (
                     content
                 )
             }
-
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-
     container: {
         // paddingTop: 12,
     },
 
     gradientWrapper: {
         borderRadius: 22,
-
         overflow: 'hidden',
     },
 
@@ -267,31 +232,20 @@ const styles = StyleSheet.create({
 
     gradientMask: {
         margin: 1.5,
-
         borderRadius: 20,
-
         overflow: 'hidden',
     },
 
     inputWrap: {
         flexDirection: 'row',
-
         alignItems: 'center',
-
         gap: 10,
-
         backgroundColor: '#FBFAF6',
-
         borderRadius: 20,
-
         borderWidth: 1,
-
         borderColor: '#D8E3D2',
-
         paddingLeft: 12,
-
         paddingRight: 8,
-
         paddingVertical: 8,
     },
 
@@ -301,23 +255,14 @@ const styles = StyleSheet.create({
 
     input: {
         flex: 1,
-
         height: 42,
-
         fontSize: 14,
-
         lineHeight: 16,
-
         color: '#244229',
-
         fontWeight: '500',
-
         paddingHorizontal: 4,
-
         paddingVertical: 0,
-
         includeFontPadding: false,
-
         textAlignVertical: 'center',
 
         transform: [
@@ -327,15 +272,10 @@ const styles = StyleSheet.create({
 
     sendButton: {
         width: 42,
-
         height: 42,
-
         borderRadius: 21,
-
         backgroundColor: '#244229',
-
         alignItems: 'center',
-
         justifyContent: 'center',
     },
 
@@ -345,13 +285,9 @@ const styles = StyleSheet.create({
 
     loadingContainer: {
         flex: 1,
-
         minHeight: 42,
-
         flexDirection: 'row',
-
         alignItems: 'center',
-
         justifyContent: 'center',
     },
 
@@ -361,13 +297,9 @@ const styles = StyleSheet.create({
 
     loadingText: {
         marginLeft: 8,
-
         fontSize: 14,
-
         color: '#5F7358',
-
         fontWeight: '600',
-
         letterSpacing: 0.2,
     },
 });

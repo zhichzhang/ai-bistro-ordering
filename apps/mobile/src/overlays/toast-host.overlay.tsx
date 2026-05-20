@@ -45,6 +45,9 @@ type Props = {
     children: React.ReactNode;
 };
 
+/**
+ * Global toast host for transient app feedback.
+ */
 export default function ToastHostOverlay({
                                              children,
                                          }: Props) {
@@ -61,6 +64,9 @@ export default function ToastHostOverlay({
     const timeoutRef =
         useRef<NodeJS.Timeout | null>(null);
 
+    /**
+     * Display a transient toast notification with animated transitions.
+     */
     const showToast =
         useCallback(
             (nextToast: ToastInput) => {
@@ -86,36 +92,36 @@ export default function ToastHostOverlay({
 
                 // setTimeout(() => {
 
-                    if (timeoutRef.current) {
-                        clearTimeout(timeoutRef.current);
-                    }
+                if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                }
 
-                    const duration =
-                        nextToast.type === "success"
-                            ? 2400
-                            : nextToast.type === "info"
-                                ? 4200
-                                : 5200;
+                const duration =
+                    nextToast.type === "success"
+                        ? 2400
+                        : nextToast.type === "info"
+                            ? 4200
+                            : 5200;
 
-                    timeoutRef.current = setTimeout(() => {
+                timeoutRef.current = setTimeout(() => {
 
-                        Animated.parallel([
-                            Animated.timing(opacity, {
-                                toValue: 0,
-                                duration: 220,
-                                useNativeDriver: true,
-                            }),
+                    Animated.parallel([
+                        Animated.timing(opacity, {
+                            toValue: 0,
+                            duration: 220,
+                            useNativeDriver: true,
+                        }),
 
-                            Animated.timing(translateY, {
-                                toValue: -20,
-                                duration: 220,
-                                useNativeDriver: true,
-                            }),
-                        ]).start(() => {
-                            setToast(null);
-                        });
+                        Animated.timing(translateY, {
+                            toValue: -20,
+                            duration: 220,
+                            useNativeDriver: true,
+                        }),
+                    ]).start(() => {
+                        setToast(null);
+                    });
 
-                    }, duration);
+                }, duration);
 
                 // }, 2400);
             },

@@ -1,7 +1,6 @@
 // apps/mobile/src/services/chat.service.ts
 
-import { apiService }
-    from "./api.service";
+import { apiService } from "./api.service";
 
 import type {
     ChatMessageDto,
@@ -9,26 +8,21 @@ import type {
 } from "../types/chat.types";
 
 export const chatService = {
-
-    //
-    // CREATE CHAT SESSION
-    //
-
+    /**
+     * Create a new chat session.
+     */
     async createSession() {
-
         return apiService.post<CreateChatSessionResponse>(
             "/chat/sessions"
         );
     },
 
-    //
-    // GET CHAT HISTORY
-    //
-
+    /**
+     * Fetch message history for a chat session.
+     */
     async getMessages(
         sessionId: string
     ) {
-
         return apiService.get<ChatMessageDto[]>(
             `/chat/sessions/${sessionId}/messages`
         );

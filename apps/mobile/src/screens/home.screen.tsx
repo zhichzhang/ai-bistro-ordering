@@ -1,5 +1,3 @@
-// apps/mobile/src/screens/home.screen.tsx
-
 import React, {
     useEffect,
     useMemo,
@@ -9,102 +7,42 @@ import React, {
 
 import {
     Animated,
+    Pressable,
+    ScrollView,
     StatusBar,
+    StyleSheet,
     Text,
     View,
-    ScrollView,
-    Pressable,
-    StyleSheet,
 } from "react-native";
 
 import {
+    SafeAreaView,
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import {
-    SafeAreaView,
-} from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
-import type {
-    PromptMenuItem,
-} from "../types/menu.types";
+import type { PromptMenuItem } from "../types/menu.types";
 
-import CategoryRail
-    from "../components/category-rail.component";
-
-import FloatingCartOverlay
-    from "../overlays/floating-cart.overlay";
-
-import CartSheet
-    from "../components/cart-sheet.component";
-
-import ModifierSheet
-    from "../overlays/modifier-sheet.overlay";
-
-import { formatUsd }
-    from "../utils/currency";
-
-import AIPromptBar
-    from "../components/ai-prompt-bar.component";
-
-import { useAppStore }
-    from "../store/app-state.store";
-
-import { cartService }
-    from "../services/cart.service";
-
-import { orderingService }
-    from "../services/ordering.service";
-
-import {
-    useToast,
-} from "../overlays/toast-host.overlay";
-
-// import type {
-//     CartItemDto,
-// } from "../types/cart.types";
-
-import {LinearGradient} from "expo-linear-gradient";
+import AIPromptBar from "../components/ai-prompt-bar.component";
+import CartSheet from "../components/cart-sheet.component";
+import CategoryRail from "../components/category-rail.component";
 import MenuItemCard from "../components/menu-item-card.component";
 
-// type CartLine = {
-//     key: string;
-//
-//     item: PromptMenuItem;
-//
-//     quantity: number;
-//
-//     modifiers: Record<
-//         string,
-//         string
-//     >;
-// };
+import FloatingCartOverlay from "../overlays/floating-cart.overlay";
+import ModifierSheet from "../overlays/modifier-sheet.overlay";
+import { useToast } from "../overlays/toast-host.overlay";
 
-type ToastState = {
-    visible: boolean;
+import { orderingService } from "../services/ordering.service";
+import { cartService } from "../services/cart.service";
 
-    message: string;
+import { useAppStore } from "../store/app-state.store";
 
-    variant:
-        | "info"
-        | "error"
-        | "success";
-};
+import { formatUsd } from "../utils/currency";
 
-// function cloneModifiers(
-//     modifiers: Record<string, string>
-// ) {
-//     return Object.entries(modifiers)
-//         .reduce<Record<string, string>>(
-//             (acc, [key, value]) => {
-//                 acc[key] = value;
-//
-//                 return acc;
-//             },
-//             {}
-//         );
-// }
-
+/**
+ * Build default modifier selections from menu definitions.
+ */
 function buildDefaultModifiers(
     item: PromptMenuItem
 ): Record<string, string> {
@@ -136,6 +74,9 @@ function buildDefaultModifiers(
     );
 }
 
+/**
+ * Normalize modifier values into stable comparison keys.
+ */
 function normalizeModifierCode(
     value: string
 ): string {
@@ -146,6 +87,9 @@ function normalizeModifierCode(
         .replace(/[\s-]+/g, "_");
 }
 
+/**
+ * Main ordering experience screen coordinating menu, cart, and AI flows.
+ */
 export default function HomeScreen() {
 
     // =====================================
@@ -156,10 +100,6 @@ export default function HomeScreen() {
         useAppStore(
             (state) => state.menu
         );
-    //
-    // if (!menu) {
-    //     return null;
-    // }
 
     const cartId =
         useAppStore(
@@ -171,13 +111,29 @@ export default function HomeScreen() {
             (state) => state.sessionId
         );
 
-    const insets = useSafeAreaInsets();
+    const cart =
+        useAppStore(
+            (state) => state.cart
+        );
 
+    const setCart =
+        useAppStore(
+            (state) => state.setCart
+        );
+
+    const { showToast } =
+        useToast();
+
+    const insets =
+        useSafeAreaInsets();
 
     // =====================================
     // CATEGORIES
     // =====================================
 
+    /**
+     * Preserve backend category ordering for menu rendering.
+     */
     const categories =
         useMemo(() => {
 
@@ -186,7 +142,7 @@ export default function HomeScreen() {
             }
 
             return [
-                ...(menu.categories ?? [])
+                ...(menu.categories ?? []),
             ].sort(
                 (a, b) =>
                     a.sort_order -
@@ -198,16 +154,6 @@ export default function HomeScreen() {
     // =====================================
     // LOCAL STATE
     // =====================================
-
-    const cart =
-        useAppStore(
-            (state) => state.cart
-        );
-
-    const setCart =
-        useAppStore(
-            (state) => state.setCart
-        );
 
     const [
         selectedCategoryId,
@@ -222,30 +168,6 @@ export default function HomeScreen() {
         setCartVisible,
     ] =
         useState(false);
-
-    // const [
-    //     aiText,
-    //     setAiText,
-    // ] =
-    //     useState("");
-
-    // const [
-    //     toast,
-    //     setToast,
-    // ] =
-    //     useState<ToastState>({
-    //         visible: false,
-    //
-    //         message: "",
-    //
-    //         variant: "info",
-    //     });
-
-    // const [
-    //     cartLines,
-    //     setCartLines,
-    // ] =
-    //     useState<CartLine[]>([]);
 
     const [
         selectedItem,
@@ -292,7 +214,8 @@ export default function HomeScreen() {
     const [
         checkoutAnimating,
         setCheckoutAnimating,
-    ] = useState(false);
+    ] =
+        useState(false);
 
     const [
         addingToCart,
@@ -300,7 +223,10 @@ export default function HomeScreen() {
     ] =
         useState(false);
 
-    const [suggestions, setSuggestions] =
+    const [
+        suggestions,
+        setSuggestions,
+    ] =
         useState<string[]>([]);
 
     // =====================================
@@ -326,9 +252,6 @@ export default function HomeScreen() {
         useRef<View | null>(
             null
         );
-
-    const { showToast } =
-        useToast();
 
     // =====================================
     // INITIAL CATEGORY
@@ -366,6 +289,9 @@ export default function HomeScreen() {
             0
         ) ?? 0) / 100;
 
+    /**
+     * Derive cart sheet display data from canonical cart state.
+     */
     const cartSheetItems =
         useMemo(() => {
 
@@ -395,13 +321,11 @@ export default function HomeScreen() {
                         Object.fromEntries(
                             (line.modifiers ?? []).map(
                                 (modifier) => [
-
                                     modifier.modifier_group_code
                                         .replace(
                                             `${line.menu_item_id}__`,
                                             ""
                                         ),
-
                                     modifier.modifier_option_code,
                                 ]
                             )
@@ -409,12 +333,9 @@ export default function HomeScreen() {
 
                     return {
                         key: line.id,
-
                         item: menuItem,
-
                         quantity:
                         line.quantity,
-
                         modifiers,
                     };
                 })
@@ -438,99 +359,9 @@ export default function HomeScreen() {
     // HELPERS
     // =====================================
 
-    // const makeLineKey = (
-    //     itemId: string,
-    //     modifiers:
-    //     Record<string, string>
-    // ) => {
-    //
-    //     const modifierSignature =
-    //         Object.entries(modifiers)
-    //             .sort(([a], [b]) =>
-    //                 a.localeCompare(b)
-    //             )
-    //             .map(
-    //                 ([group, option]) =>
-    //                     `${group}:${option}`
-    //             )
-    //             .join("|");
-    //
-    //     return `${itemId}::${
-    //         modifierSignature || "base"
-    //     }`;
-    // };
-
-    // const showToast = (
-    //     message: string,
-    //     variant:
-    //     ToastState["variant"] =
-    //     "info"
-    // ) => {
-    //
-    //     setToast({
-    //         visible: true,
-    //
-    //         message,
-    //
-    //         variant,
-    //     });
-    // };
-
-    // const upsertItem = (
-    //     item: PromptMenuItem,
-    //     modifiers:
-    //     Record<string, string> = {}
-    // ) => {
-    //
-    //     const key =
-    //         makeLineKey(
-    //             item.id,
-    //             modifiers
-    //         );
-    //
-    //     setCartLines((prev) => {
-    //
-    //         const matchIndex =
-    //             prev.findIndex(
-    //                 (line) =>
-    //                     line.key === key
-    //             );
-    //
-    //         if (matchIndex >= 0) {
-    //
-    //             const next = [...prev];
-    //
-    //             next[matchIndex] = {
-    //                 ...next[matchIndex],
-    //
-    //                 quantity:
-    //                     next[matchIndex]
-    //                         .quantity + 1,
-    //             };
-    //
-    //             return next;
-    //         }
-    //
-    //         return [
-    //             ...prev,
-    //             {
-    //                 key,
-    //
-    //                 item,
-    //
-    //                 quantity: 1,
-    //
-    //                 modifiers:
-    //                     cloneModifiers(
-    //                         modifiers
-    //                     ),
-    //             },
-    //         ];
-    //     });
-    //
-    //     pulseCart("add");
-    // };
-
+    /**
+     * Restrict AI ordering input to English-safe prompts.
+     */
     const isEnglishPrompt = (
         text: string
     ): boolean => {
@@ -540,6 +371,9 @@ export default function HomeScreen() {
         );
     };
 
+    /**
+     * Add a menu item into the active cart session.
+     */
     const addItem =
         async (
             item: PromptMenuItem,
@@ -582,6 +416,9 @@ export default function HomeScreen() {
             }
         };
 
+    /**
+     * Increase quantity for an existing cart item.
+     */
     const increaseItem =
         async (
             cartItemId: string,
@@ -604,6 +441,9 @@ export default function HomeScreen() {
             pulseCart("add");
         };
 
+    /**
+     * Remove a cart item from the active cart.
+     */
     const decreaseItem =
         async (
             cartItemId: string
@@ -624,6 +464,9 @@ export default function HomeScreen() {
             pulseCart("remove");
         };
 
+    /**
+     * Open modifier editing for an existing cart line.
+     */
     const openModifierEditor = (
         key: string
     ) => {
@@ -638,7 +481,6 @@ export default function HomeScreen() {
             return;
         }
 
-        // 先關閉 cart modal
         setCartVisible(false);
 
         setEditingLineKey(key);
@@ -658,7 +500,6 @@ export default function HomeScreen() {
             )
         );
 
-        // 等 cart modal 關閉後再開 modifier modal
         setTimeout(() => {
 
             setCustomizationVisible(
@@ -668,6 +509,9 @@ export default function HomeScreen() {
         }, 220);
     };
 
+    /**
+     * Replace modifier selections for a cart item.
+     */
     const replaceModifiers =
         async (
             cartItemId: string,
@@ -693,6 +537,9 @@ export default function HomeScreen() {
     // ACTIONS
     // =====================================
 
+    /**
+     * Submit the active cart and rotate into a fresh ordering session.
+     */
     const handleCheckout =
         async () => {
 
@@ -711,21 +558,12 @@ export default function HomeScreen() {
                         cart.cart.id
                     );
 
-                //
-                // replace with fresh cart
-                //
-
                 setCart({
                     cart:
                     response.nextCart.cart,
 
                     items: [],
                 });
-
-                //
-                // IMPORTANT:
-                // new ordering session
-                //
 
                 useAppStore
                     .getState()
@@ -739,10 +577,6 @@ export default function HomeScreen() {
                         response.nextCart.chatSessionId
                     );
 
-                //
-                // reset transient UI state
-                //
-
                 setPrompt("");
 
                 setSelectedItem(null);
@@ -755,15 +589,10 @@ export default function HomeScreen() {
 
                 setCartVisible(false);
 
-                //
-                // success feedback
-                //
-
-
                 showToast({
                     type: "success",
                     message:
-                        `Order ${response.orderNumber} confirmed.`
+                        `Order ${response.orderNumber} confirmed.`,
                 });
 
             } catch (error) {
@@ -787,6 +616,9 @@ export default function HomeScreen() {
             }
         };
 
+    /**
+     * Trigger cart feedback animation after cart mutations.
+     */
     const pulseCart = (
         type: "add" | "remove"
     ) => {
@@ -801,9 +633,7 @@ export default function HomeScreen() {
                 cartScale,
                 {
                     toValue: peak,
-
                     useNativeDriver: true,
-
                     friction: 4,
                 }
             ),
@@ -812,272 +642,98 @@ export default function HomeScreen() {
                 cartScale,
                 {
                     toValue: 1,
-
                     useNativeDriver: true,
-
                     friction: 5,
                 }
             ),
         ]).start();
     };
 
-    // const handleAiSubmit =
-    //     async () => {
-    //
-    //         if (!prompt.trim()) {
-    //
-    //             showToast(
-    //                 "Enter a request first.",
-    //                 "error"
-    //             );
-    //
-    //             return;
-    //         }
-    //
-    //         if (!cart?.cart.id) {
-    //
-    //             showToast(
-    //                 "Cart not initialized.",
-    //                 "error"
-    //             );
-    //
-    //             return;
-    //         }
-    //
-    //         if (!cartId) {
-    //
-    //             showToast(
-    //                 "Missing cart id.",
-    //                 "error"
-    //             );
-    //
-    //             return;
-    //         }
-    //
-    //         if (!sessionId) {
-    //
-    //             showToast(
-    //                 "Missing session id.",
-    //                 "error"
-    //             );
-    //
-    //             return;
-    //         }
-    //
-    //         try {
-    //
-    //             setAiLoading(true);
-    //
-    //             const response =
-    //                 await orderingService.sendMessage(
-    //                     sessionId,
-    //                     prompt
-    //                 );
-    //
-    //             console.log(
-    //                 response.normalization
-    //             );
-    //
-    //             console.log(
-    //                 response.resolutions
-    //             );
-    //
-    //             //
-    //             // canonical backend snapshot
-    //             //
-    //
-    //             if (response.cart) {
-    //                 setCart(
-    //                     response.cart
-    //                 );
-    //             }
-    //
-    //             //
-    //             // clarification
-    //             //
-    //
-    //             // const clarification =
-    //             //     response.resolutions.find(
-    //             //         (r) =>
-    //             //             r.status ===
-    //             //             "needs_clarification"
-    //             //     );
-    //             //
-    //             // if (clarification) {
-    //             //
-    //             //     showToast(
-    //             //         clarification.question ||
-    //             //         clarification.message ||
-    //             //         "Please clarify.",
-    //             //         "info"
-    //             //     );
-    //             //
-    //             // } else {
-    //             //
-    //             //     showToast(
-    //             //         response.assistantMessage ||
-    //             //         "AI request completed.",
-    //             //         "success"
-    //             //     );
-    //             // }
-    //
-    //             switch (response.status) {
-    //
-    //                 case "success":
-    //
-    //                     showToast(
-    //                         response.assistantMessage ||
-    //                         "AI request completed.",
-    //                         "success"
-    //                     );
-    //
-    //                     break;
-    //
-    //                 case "partial_failure":
-    //
-    //                     showToast(
-    //                         response.assistantMessage ||
-    //                         "Some actions failed.",
-    //                         "error"
-    //                     );
-    //
-    //                     break;
-    //
-    //                 case "needs_clarification":
-    //
-    //                     showToast(
-    //                         response.assistantMessage ||
-    //                         "Please clarify.",
-    //                         "info"
-    //                     );
-    //
-    //                     break;
-    //
-    //                 case "error":
-    //
-    //                 default:
-    //
-    //                     showToast(
-    //                         response.assistantMessage ||
-    //                         "AI request failed.",
-    //                         "error"
-    //                     );
-    //
-    //                     break;
-    //             }
-    //
-    //             setPrompt("");
-    //
-    //         } catch {
-    //
-    //             showToast(
-    //                 "AI request failed.",
-    //                 "error"
-    //             );
-    //
-    //         } finally {
-    //
-    //             setAiLoading(false);
-    //         }
-    //     };
+    /**
+     * Execute an AI ordering turn against the backend orchestration pipeline.
+     */
+    const handleAISubmit =
+        async () => {
 
-    const handleAISubmit = async () => {
-
-        if (!sessionId) {
-            return;
-        }
-
-        if (!prompt.trim()) {
-            return;
-        }
-
-        if (!isEnglishPrompt(prompt)) {
-
-            showToast({
-                type: "error",
-                message:
-                    "Please enter your request in English.",
-            });
-
-            return;
-        }
-
-        try {
-
-            setAiLoading(true);
-
-            const response =
-                await orderingService.sendMessage(
-                    sessionId,
-                    prompt,
-                );
-
-            //
-            // UPDATE APP STATE
-            //
-
-            setCart(response.cart);
-
-            //
-            // CLEAR INPUT
-            //
-
-            setPrompt("");
-
-            //
-            // SUCCESS
-            //
-
-            if (
-                response.status === "success"
-            ) {
-
-                setSuggestions([]);
-
-                showToast({
-                    type: "success",
-                    message:
-                    response.assistantMessage,
-                });
+            if (!sessionId) {
+                return;
             }
 
-            //
-            // CLARIFICATION
-            //
-
-            if (
-                response.status ===
-                "needs_clarification"
-            ) {
-
-                const clarifySuggestions =
-                    response.resolutions?.[0]
-                        ?.suggestions ?? [];
-
-                setSuggestions(
-                    clarifySuggestions,
-                );
-
-                showToast({
-                    type: "info",
-                    message:
-                    response.assistantMessage,
-                });
+            if (!prompt.trim()) {
+                return;
             }
 
-        } catch (error) {
+            if (!isEnglishPrompt(prompt)) {
 
-            showToast({
-                type: "error",
-                message:
-                    "Unable to process request.",
-            });
+                showToast({
+                    type: "error",
+                    message:
+                        "Please enter your request in English.",
+                });
 
-        } finally {
+                return;
+            }
 
-            setAiLoading(false);
-        }
-    };
+            try {
+
+                setAiLoading(true);
+
+                const response =
+                    await orderingService.sendMessage(
+                        sessionId,
+                        prompt,
+                    );
+
+                setCart(response.cart);
+
+                setPrompt("");
+
+                if (
+                    response.status === "success"
+                ) {
+
+                    setSuggestions([]);
+
+                    showToast({
+                        type: "success",
+                        message:
+                        response.assistantMessage,
+                    });
+                }
+
+                if (
+                    response.status ===
+                    "needs_clarification"
+                ) {
+
+                    const clarifySuggestions =
+                        response.resolutions?.[0]
+                            ?.suggestions ?? [];
+
+                    setSuggestions(
+                        clarifySuggestions,
+                    );
+
+                    showToast({
+                        type: "info",
+                        message:
+                        response.assistantMessage,
+                    });
+                }
+
+            } catch {
+
+                showToast({
+                    type: "error",
+                    message:
+                        "Unable to process request.",
+                });
+
+            } finally {
+
+                setAiLoading(false);
+            }
+        };
 
     if (!menu) {
         return null;
@@ -1109,24 +765,11 @@ export default function HomeScreen() {
                         : "auto"
                 }
             >
-
-                {/*<ToastHostOverlay*/}
-                {/*    visible={toast.visible}*/}
-                {/*    message={toast.message}*/}
-                {/*    variant={toast.variant}*/}
-                {/*    onHide={() =>*/}
-                {/*        setToast((prev) => ({*/}
-                {/*            ...prev,*/}
-                {/*            visible: false,*/}
-                {/*        }))*/}
-                {/*    }*/}
-                {/*/>*/}
-
-                {/* HEADER */}
                 <View
                     style={{
                         marginTop: -insets.top,
-                    }}>
+                    }}
+                >
                     <LinearGradient
                         colors={[
                             "#1B311D",
@@ -1140,41 +783,25 @@ export default function HomeScreen() {
                             0.76,
                             1,
                         ]}
-                        style={[
-                            styles.header,
-                        ]}
+                        style={styles.header}
                     >
-
-                        {/* GLOW */}
-
                         <View style={styles.titleGlow} />
 
-                        {/* TOP LINE */}
-
                         <View style={styles.headerLine} />
-
-                        {/* SHADOW TITLE */}
 
                         <Text style={styles.titleShadow}>
                             Grove & Grill
                         </Text>
 
-                        {/* MAIN TITLE */}
-
                         <Text style={styles.title}>
                             Grove & Grill
                         </Text>
-
-                        {/* TAGLINE */}
 
                         <Text style={styles.tagline}>
                             Fresh flavors crafted daily
                         </Text>
 
-                        {/* ACCENTS */}
-
                         <View style={styles.headerAccentRow}>
-
                             <View style={styles.headerAccentDot} />
 
                             <View style={styles.headerAccentDivider} />
@@ -1184,15 +811,10 @@ export default function HomeScreen() {
                     </LinearGradient>
                 </View>
 
-
-
-                {/* AI BAR */}
-
                 <View style={styles.aiBar}>
                     {
                         suggestions.length > 0 && (
                             <View style={styles.chipsContainer}>
-
                                 {
                                     suggestions.map((s) => (
                                         <Pressable
@@ -1215,10 +837,10 @@ export default function HomeScreen() {
                                         </Pressable>
                                     ))
                                 }
-
                             </View>
                         )
                     }
+
                     <AIPromptBar
                         value={prompt}
                         onChange={setPrompt}
@@ -1227,8 +849,6 @@ export default function HomeScreen() {
                         disabled={aiLoading}
                     />
                 </View>
-
-                {/* CATEGORY */}
 
                 <CategoryRail
                     categories={categories}
@@ -1262,8 +882,6 @@ export default function HomeScreen() {
                     }}
                 />
 
-                {/* MENU */}
-
                 <ScrollView
                     ref={scrollRef}
                     style={styles.menuScroll}
@@ -1285,12 +903,8 @@ export default function HomeScreen() {
                                             .layout.y;
                                 }}
                             >
-                                <View
-                                    style={styles.sectionHeader}
-                                >
-                                    <Text
-                                        style={styles.sectionTitle}
-                                    >
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>
                                         {category.name}
                                     </Text>
                                 </View>
@@ -1333,6 +947,7 @@ export default function HomeScreen() {
                                                         cardItem
                                                     )
                                                 );
+
                                                 setCustomizationVisible(
                                                     true
                                                 );
@@ -1374,8 +989,6 @@ export default function HomeScreen() {
                     />
                 </ScrollView>
 
-                {/* FLOATING CART */}
-
                 <FloatingCartOverlay
                     checkoutAnimating={
                         checkoutAnimating
@@ -1388,26 +1001,18 @@ export default function HomeScreen() {
                     }
                 />
 
-                {/* BOTTOM */}
-
-                <View
-                    style={styles.bottomDock}
-                >
+                <View style={styles.bottomDock}>
                     <Pressable
                         style={styles.aiDock}
                         onPress={() =>
                             setCartVisible(true)
                         }
                     >
-                        <Text
-                            style={styles.aiDockText}
-                        >
+                        <Text style={styles.aiDockText}>
                             Cart subtotal
                         </Text>
 
-                        <Text
-                            style={styles.aiDockHint}
-                        >
+                        <Text style={styles.aiDockHint}>
                             {formatUsd(
                                 subtotal
                             )}
@@ -1415,14 +1020,9 @@ export default function HomeScreen() {
                     </Pressable>
                 </View>
 
-                {/* CART SHEET */}
-
                 <CartSheet
                     visible={cartVisible}
                     items={cartSheetItems}
-                    // aiText={aiText}
-                    // onChangeAiText={setAiText}
-                    // onSendAi={() => {}}
                     onClose={() =>
                         setCartVisible(false)
                     }
@@ -1432,33 +1032,21 @@ export default function HomeScreen() {
                     onCheckout={handleCheckout}
                 />
 
-                {/* MODIFIER SHEET */}
-
-
                 <ModifierSheet
                     visible={customizationVisible}
-
                     item={selectedItem}
-
                     value={selectedModifiers}
-
                     addingToCart={addingToCart}
-
                     onChange={(next) =>
                         setSelectedModifiers(
                             next
                         )
                     }
-
                     onClose={() => {
 
                         setCustomizationVisible(
                             false
                         );
-
-                        //
-                        // wait for dismiss animation
-                        //
 
                         setTimeout(() => {
 
@@ -1472,39 +1060,15 @@ export default function HomeScreen() {
 
                         }, 180);
                     }}
-
                     onAdd={async (
                         next
                     ) => {
-
-                        console.log(
-                            "MODIFIER SHEET ONADD"
-                        );
-
-                        console.log(
-                            "SELECTED ITEM:",
-                            selectedItem
-                        );
-
-                        console.log(
-                            "CURRENT CART:",
-                            cart
-                        );
-
-                        console.log(
-                            "NEXT MODIFIERS:",
-                            next
-                        );
 
                         if (
                             !selectedItem
                         ) {
                             return;
                         }
-
-                        // ====================================
-                        // EDIT EXISTING
-                        // ====================================
 
                         if (editingLineKey) {
 

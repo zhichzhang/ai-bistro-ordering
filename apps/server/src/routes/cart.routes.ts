@@ -1,13 +1,18 @@
 import { Router } from "express";
+
 import { CartService } from "../services/cart.service";
 
-
-export function createCartRouter(cartService: CartService): Router {
+export function createCartRouter(
+    cartService: CartService
+): Router {
     const router = Router();
 
-    router.post("/", async (req, res, next) => {
+    /**
+     * POST /cart
+     * Create a new cart session.
+     */
+    router.post("/", async (_req, res, next) => {
         try {
-
             const cart =
                 await cartService.createCart();
 
@@ -18,13 +23,12 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// GET CART
-//
-
+    /**
+     * GET /cart/:cartId
+     * Load hydrated cart state.
+     */
     router.get("/:cartId", async (req, res, next) => {
         try {
-
             const cart =
                 await cartService.getCartContext(
                     req.params.cartId
@@ -37,13 +41,12 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// GET CART SUMMARY
-//
-
+    /**
+     * GET /cart/:cartId/summary
+     * Load lightweight cart summary state.
+     */
     router.get("/:cartId/summary", async (req, res, next) => {
         try {
-
             const summary =
                 await cartService.getCartSummary(
                     req.params.cartId
@@ -56,27 +59,25 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// ADD ITEM
-//
-
+    /**
+     * POST /cart/:cartId/items
+     * Add a new cart item.
+     */
     router.post("/:cartId/items", async (req, res, next) => {
         try {
+            await cartService.addItem(
+                req.params.cartId,
+                {
+                    menuItemId:
+                    req.body.menuItemId,
 
-            const item =
-                await cartService.addItem(
-                    req.params.cartId,
-                    {
-                        menuItemId:
-                        req.body.menuItemId,
+                    quantity:
+                    req.body.quantity,
 
-                        quantity:
-                        req.body.quantity,
-
-                        modifiers:
-                            req.body.modifiers ?? {},
-                    }
-                );
+                    modifiers:
+                        req.body.modifiers ?? {},
+                }
+            );
 
             const updatedCart =
                 await cartService.getCartContext(
@@ -90,25 +91,20 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// PATCH ITEM
-//
-
+    /**
+     * PATCH /cart/:cartId/items/:cartItemId
+     * Apply quantity or modifier mutations to an existing cart line.
+     */
     router.patch("/:cartId/items/:cartItemId", async (req, res, next) => {
         try {
-
             const body =
                 req.body;
 
-            //
-            // quantity update
-            //
-
+            // Quantity update flow.
             if (
                 typeof body.quantity ===
                 "number"
             ) {
-
                 const updated =
                     await cartService.updateItemQuantity(
                         req.params.cartItemId,
@@ -116,7 +112,6 @@ export function createCartRouter(cartService: CartService): Router {
                     );
 
                 if (!updated) {
-
                     const updatedCart =
                         await cartService.getCartContext(
                             req.params.cartId
@@ -137,19 +132,14 @@ export function createCartRouter(cartService: CartService): Router {
                 return;
             }
 
-            //
-            // modifier update
-            //
-
+            // Modifier replacement flow.
             if (body.modifiers) {
-
                 const cartContext =
                     await cartService.getCartContext(
                         req.params.cartId
                     );
 
                 if (!cartContext) {
-
                     res.status(404).json({
                         error: {
                             code: "NOT_FOUND",
@@ -169,7 +159,6 @@ export function createCartRouter(cartService: CartService): Router {
                     );
 
                 if (!targetItem) {
-
                     res.status(404).json({
                         error: {
                             code: "NOT_FOUND",
@@ -212,19 +201,22 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// REPLACE ITEM
-//
-
+    /**
+     * PUT /cart/:cartId/items/:cartItemId
+     * Replace an existing cart line item.
+     */
     router.put("/:cartId/items/:cartItemId", async (req, res, next) => {
         try {
-
             const result =
                 await cartService.replaceCartItem({
-                    cartId: req.params.cartId,
+                    cartId:
+                    req.params.cartId,
+
                     cartItemId:
                     req.params.cartItemId,
-                    body: req.body,
+
+                    body:
+                    req.body,
                 });
 
             res.json(result);
@@ -234,13 +226,12 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// REMOVE ITEM
-//
-
+    /**
+     * DELETE /cart/:cartId/items/:cartItemId
+     * Remove a cart item line or decrement quantity.
+     */
     router.delete("/:cartId/items/:cartItemId", async (req, res, next) => {
         try {
-
             await cartService.removeItemById(
                 req.params.cartItemId
             );
@@ -257,13 +248,12 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// CHECKOUT
-//
-
+    /**
+     * POST /cart/:cartId/checkout
+     * Submit the current cart.
+     */
     router.post("/:cartId/checkout", async (req, res, next) => {
         try {
-
             const result =
                 await cartService.checkoutCart(
                     req.params.cartId
@@ -276,27 +266,12 @@ export function createCartRouter(cartService: CartService): Router {
         }
     });
 
-//
-// DELETE CART
-//
-
-// router.delete("/:cartId", async (req, res, next) => {
-//     try {
-//
-//         await cartService.deleteCart(
-//             req.params.cartId
-//         );
-//
-//         res.status(204).send();
-//
-//     } catch (error) {
-//         next(error);
-//     }
-// });
-
+    /**
+     * POST /cart/:cartId/clear
+     * Remove all cart items.
+     */
     router.post("/:cartId/clear", async (req, res, next) => {
         try {
-
             await cartService.clearCart(
                 req.params.cartId
             );

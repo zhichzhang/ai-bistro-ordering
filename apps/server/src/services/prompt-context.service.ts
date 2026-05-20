@@ -18,8 +18,9 @@ import type {
 } from "../types/menu.types";
 
 export class PromptContextService {
-
-    // Serialize the current cart into prompt-friendly text.
+    /**
+     * Serialize the current cart into prompt-friendly text.
+     */
     static serializeCartContext(
         cart: CartContext | null,
         menuContext: PromptMenuContext
@@ -53,20 +54,16 @@ export class PromptContextService {
     static serializeModifierContext(
         menuContext: PromptMenuContext
     ): string {
-
         const lines: string[] = [];
 
         for (const category of menuContext.categories) {
-
             for (const item of category.items) {
-
                 lines.push(item.name);
 
                 const modifierKeys =
                     Object.keys(item.modifiers);
 
                 if (modifierKeys.length === 0) {
-
                     lines.push("- no modifiers");
                     lines.push("");
 
@@ -84,7 +81,9 @@ export class PromptContextService {
         return lines.join("\n");
     }
 
-    // Serialize a single cart item into structured prompt context.
+    /**
+     * Serialize a single cart item into structured prompt context.
+     */
     private static serializeCartItem(
         item: CartContextItem,
         menuContext: PromptMenuContext
@@ -120,7 +119,9 @@ export class PromptContextService {
         ].join("\n");
     }
 
-    // Serialize modifier selections into stable prompt text.
+    /**
+     * Serialize modifier selections into stable prompt text.
+     */
     private static serializeModifiers(
         modifiers: CartItemModifierRow[]
     ): string {
@@ -149,7 +150,9 @@ export class PromptContextService {
             .join("\n");
     }
 
-    // Serialize recent action history for prompt grounding.
+    /**
+     * Serialize recent action history for prompt grounding.
+     */
     static serializeRecentActions(
         actions: ChatMessageActionRow[]
     ): string {
@@ -193,7 +196,9 @@ export class PromptContextService {
         ].join("\n");
     }
 
-    // Serialize execution references for chained action resolution.
+    /**
+     * Serialize execution references for chained action resolution.
+     */
     static serializeExecutionContext(
         executionContext:
             CartExecutionContext | null
@@ -217,7 +222,9 @@ export class PromptContextService {
         ].join("\n");
     }
 
-    // Serialize a single execution reference entry.
+    /**
+     * Serialize a single execution reference entry.
+     */
     private static serializeExecutionAction(
         action: CartExecutionPreviousAction
     ): string {
@@ -247,7 +254,9 @@ export class PromptContextService {
         ].join("\n");
     }
 
-    // Resolve menu item names for human-readable prompt context.
+    /**
+     * Resolve menu item names for human-readable prompt context.
+     */
     private static resolveMenuItemName(
         menuItemId: string,
         menuContext: PromptMenuContext
@@ -275,7 +284,9 @@ export class PromptContextService {
         return item.name;
     }
 
-    // Humanize unresolved menu item identifiers.
+    /**
+     * Humanize unresolved menu item identifiers.
+     */
     private static humanizeMenuItemId(
         menuItemId: string
     ): string {

@@ -1,15 +1,15 @@
 // src/mappers/chat.mapper.ts
 
 import {
-    ChatSessionRow,
-    ChatMessageRow,
     ChatMessageActionRow,
+    ChatMessageRow,
+    ChatSessionRow,
 } from "../types/db.types";
 
 import {
-    ChatSession,
     ChatMessage,
     ChatMessageAction,
+    ChatSession,
 } from "../types/domain.types";
 
 export function toChatSession(
@@ -65,12 +65,16 @@ export function toChatMessageAction(
         dependsOn: row.depends_on,
 
         referenceType: row.reference_type,
+
         referenceActionIndex:
         row.reference_action_index,
+
         referenceCartItemId:
         row.reference_cart_item_id,
+
         referenceCartPosition:
         row.reference_cart_position,
+
         referenceText:
         row.reference_text,
 

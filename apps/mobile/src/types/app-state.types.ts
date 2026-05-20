@@ -1,60 +1,33 @@
 // apps/mobile/src/types/app-state.types.ts
 
-import type {
-    PromptMenuContext,
-} from "./menu.types";
-
-import type {
-    CartContextDto,
-} from "./cart.types";
+import type { PromptMenuContext } from "./menu.types";
+import type { CartContextDto } from "./cart.types";
 
 export type AppState = {
+    // Menu context
+    menu: PromptMenuContext | null;
 
-    //
-    // menu
-    //
+    // Workflow ids
+    cartId: string | null;
+    sessionId: string | null;
 
-    menu:
-        PromptMenuContext | null;
+    // Canonical backend cart snapshot
+    cart: CartContextDto | null;
 
-    //
-    // workflow ids
-    //
-
-    cartId:
-        string | null;
-
-    sessionId:
-        string | null;
-
-    //
-    // canonical backend cart snapshot
-    //
-
-    cart:
-        CartContextDto | null;
-
-    //
-    // setters
-    //
-
+    // State setters
     setMenu: (
-        menu:
-            PromptMenuContext | null
+        menu: PromptMenuContext | null
     ) => void;
 
     setCartId: (
-        cartId:
-            string | null
+        cartId: string | null
     ) => void;
 
     setSessionId: (
-        sessionId:
-            string | null
+        sessionId: string | null
     ) => void;
 
     setCart: (
-        cart:
-            CartContextDto | null
+        cart: CartContextDto | null
     ) => void;
 };

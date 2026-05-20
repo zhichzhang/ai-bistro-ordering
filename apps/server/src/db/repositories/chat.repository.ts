@@ -1,13 +1,14 @@
 // src/db/repositories/chat.repository.ts
 
 import { supabase } from "../supabase";
+
 import { throwIfError } from "./base.repository";
+
 import type {
-    ChatSessionRow,
-    ChatMessageRow,
     ChatMessageActionRow,
+    ChatMessageRow,
+    ChatSessionRow,
 } from "../../types/db.types";
-import {randomUUID} from "node:crypto";
 
 export class ChatRepository {
     static async createChatSession(): Promise<ChatSessionRow> {
@@ -32,9 +33,13 @@ export class ChatRepository {
             .maybeSingle();
 
         throwIfError(error);
+
         return (data as ChatSessionRow | null) ?? null;
     }
 
+    /**
+     * Persist a chat message with optional structured AI payload metadata.
+     */
     static async createChatMessage(input: {
         chatSessionId: string;
         role: "user" | "assistant" | "system";
@@ -55,6 +60,7 @@ export class ChatRepository {
             .single();
 
         throwIfError(error);
+
         return data as ChatMessageRow;
     }
 
@@ -68,9 +74,13 @@ export class ChatRepository {
             .order("created_at", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as ChatMessageRow[];
     }
 
+    /**
+     * Persist normalized orchestration actions for downstream execution.
+     */
     static async createChatMessageAction(input: {
         chatMessageId: string;
         cartId: string | null;
@@ -127,6 +137,7 @@ export class ChatRepository {
             .single();
 
         throwIfError(error);
+
         return data as ChatMessageActionRow;
     }
 
@@ -145,6 +156,7 @@ export class ChatRepository {
             .single();
 
         throwIfError(error);
+
         return data as ChatMessageActionRow;
     }
 
@@ -158,13 +170,16 @@ export class ChatRepository {
             .order("action_index", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as ChatMessageActionRow[];
     }
 
+    /**
+     * Load recent action history for prompt grounding.
+     */
     static async listRecentActionsBySessionId(
         chatSessionId: string
     ): Promise<ChatMessageActionRow[]> {
-
         const { data, error } =
             await supabase
                 .from("chat_message_actions")
@@ -200,7 +215,6 @@ export class ChatRepository {
     static async getLatestAssistantMessage(
         chatSessionId: string
     ) {
-
         const { data, error } =
             await supabase
                 .from("chat_messages")

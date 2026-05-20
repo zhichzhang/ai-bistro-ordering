@@ -1,6 +1,8 @@
 // src/db/repositories/base.repository.ts
 
-import type { PostgrestError } from "@supabase/supabase-js";
+import type {
+    PostgrestError,
+} from "@supabase/supabase-js";
 
 export class RepositoryError extends Error {
     constructor(
@@ -8,12 +10,21 @@ export class RepositoryError extends Error {
         public readonly cause?: PostgrestError
     ) {
         super(message);
+
         this.name = "RepositoryError";
     }
 }
 
-export function throwIfError(error: PostgrestError | null): void {
+/**
+ * Normalize Supabase repository errors into typed exceptions.
+ */
+export function throwIfError(
+    error: PostgrestError | null
+): void {
     if (error) {
-        throw new RepositoryError(error.message, error);
+        throw new RepositoryError(
+            error.message,
+            error
+        );
     }
 }

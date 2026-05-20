@@ -1,5 +1,7 @@
 // apps/server/src/services/chat.service.ts
+
 import { ChatRepository } from "../db/repositories/chat.repository";
+
 import type {
     ChatMessageActionRow,
     ChatMessageRow,
@@ -25,9 +27,13 @@ export type AssistantMessagePayload = {
 };
 
 export class ChatService {
-    async ensureSession(sessionId?: string): Promise<ChatSessionRow> {
+    async ensureSession(
+        sessionId?: string
+    ): Promise<ChatSessionRow> {
         if (sessionId) {
-            const existing = await ChatRepository.getChatSessionById(sessionId);
+            const existing =
+                await ChatRepository.getChatSessionById(sessionId);
+
             if (existing) {
                 return existing;
             }
@@ -60,16 +66,22 @@ export class ChatService {
             chatSessionId: input.chatSessionId,
             role: "assistant",
             content: input.content,
-            parsedAction: (input.payload ?? null) as Record<string, unknown> | null,
+            parsedAction:
+                (input.payload ?? null) as Record<string, unknown> | null,
             errorType: input.errorType ?? null,
         });
     }
 
+    /**
+     * Load recent chat history for conversational grounding.
+     */
     async getRecentMessages(
         chatSessionId: string,
         limit: number = 8
     ): Promise<ChatContextMessage[]> {
-        const messages = await ChatRepository.listMessagesBySessionId(chatSessionId);
+        const messages =
+            await ChatRepository.listMessagesBySessionId(chatSessionId);
+
         return messages.slice(-limit).map((message) => ({
             id: message.id,
             role: message.role,
@@ -79,13 +91,19 @@ export class ChatService {
         }));
     }
 
-    async buildChatContext(chatSessionId: string, limit: number = 8): Promise<ChatContext> {
-        const session = await ChatRepository.getChatSessionById(chatSessionId);
+    async buildChatContext(
+        chatSessionId: string,
+        limit: number = 8
+    ): Promise<ChatContext> {
+        const session =
+            await ChatRepository.getChatSessionById(chatSessionId);
+
         if (!session) {
             throw new Error(`Chat session not found: ${chatSessionId}`);
         }
 
-        const recentMessages = await this.getRecentMessages(chatSessionId, limit);
+        const recentMessages =
+            await this.getRecentMessages(chatSessionId, limit);
 
         return {
             session,
@@ -99,6 +117,9 @@ export class ChatService {
         return ChatRepository.listActionsByMessageId(chatMessageId);
     }
 
+    /**
+     * Persist normalized action rows before execution begins.
+     */
     async appendActionRows(input: {
         chatMessageId: string;
         cartId: string | null;
@@ -124,31 +145,35 @@ export class ChatService {
         const created: ChatMessageActionRow[] = [];
 
         for (const row of input.normalizedActionRows) {
-            const createdRow = await ChatRepository.createChatMessageAction({
-                chatMessageId: input.chatMessageId,
-                cartId: input.cartId,
-                actionIndex: row.actionIndex,
-                actionType: row.actionType,
-                intent: input.intent,
-                status: row.status,
-                normalizedAction: row.normalizedAction,
-                resolvedAction: null,
-                question: row.question ?? null,
-                message: row.message ?? null,
-                errorType: row.errorType ?? null,
-                errorMessage: row.errorMessage ?? null,
-                confidence: row.confidence,
-                dependsOn: row.dependsOn ?? [],
-                referenceType: row.referenceType ?? null,
-                referenceActionIndex: row.referenceActionIndex ?? null,
-                referenceCartItemId: row.referenceCartItemId ?? null,
-                referenceCartPosition: row.referenceCartPosition ?? null,
-                referenceText: row.referenceText ?? null,
-                resolvedMenuItemId: null,
-                resolvedCartItemId: null,
-                executionOrder: row.actionIndex,
-                executedAt: null,
-            });
+            const createdRow =
+                await ChatRepository.createChatMessageAction({
+                    chatMessageId: input.chatMessageId,
+                    cartId: input.cartId,
+                    actionIndex: row.actionIndex,
+                    actionType: row.actionType,
+                    intent: input.intent,
+                    status: row.status,
+                    normalizedAction: row.normalizedAction,
+                    resolvedAction: null,
+                    question: row.question ?? null,
+                    message: row.message ?? null,
+                    errorType: row.errorType ?? null,
+                    errorMessage: row.errorMessage ?? null,
+                    confidence: row.confidence,
+                    dependsOn: row.dependsOn ?? [],
+                    referenceType: row.referenceType ?? null,
+                    referenceActionIndex:
+                        row.referenceActionIndex ?? null,
+                    referenceCartItemId:
+                        row.referenceCartItemId ?? null,
+                    referenceCartPosition:
+                        row.referenceCartPosition ?? null,
+                    referenceText: row.referenceText ?? null,
+                    resolvedMenuItemId: null,
+                    resolvedCartItemId: null,
+                    executionOrder: row.actionIndex,
+                    executedAt: null,
+                });
 
             created.push(createdRow);
         }
@@ -156,15 +181,34 @@ export class ChatService {
         return created;
     }
 
+    /**
+     * Build lightweight assistant response text from execution state.
+     */
     buildAssistantText(input: {
         normalizationStatus?: string;
-        resolutions?: Array<{ status: string; message?: string; question?: string }>;
+        resolutions?: Array<{
+            status: string;
+            message?: string;
+            question?: string;
+        }>;
     }): string {
-        const resolutions = input.resolutions ?? [];
+        const resolutions =
+            input.resolutions ?? [];
 
-        const successCount = resolutions.filter((r) => r.status === "success").length;
-        const clarification = resolutions.find((r) => r.status === "needs_clarification");
-        const errors = resolutions.filter((r) => r.status === "error").length;
+        const successCount =
+            resolutions.filter(
+                (r) => r.status === "success"
+            ).length;
+
+        const clarification =
+            resolutions.find(
+                (r) => r.status === "needs_clarification"
+            );
+
+        const errors =
+            resolutions.filter(
+                (r) => r.status === "error"
+            ).length;
 
         if (clarification?.question) {
             return clarification.question;

@@ -354,14 +354,14 @@ export default function ModifierSheet({
                     disabled={addingToCart}
                     onPress={() => {
 
-                        console.log(
-                            "ADD TO CART PRESSED"
-                        );
-
-                        console.log(
-                            "MODIFIER VALUE:",
-                            value
-                        );
+                        // console.log(
+                        //     "ADD TO CART PRESSED"
+                        // );
+                        //
+                        // console.log(
+                        //     "MODIFIER VALUE:",
+                        //     value
+                        // );
 
                         onAdd(value);
                     }}

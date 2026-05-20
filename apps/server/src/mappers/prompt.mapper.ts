@@ -1,20 +1,22 @@
 // src/mappers/prompt.mapper.ts
 
 import {
+    ChatMessageActionRow,
+} from "../types/db.types";
+
+import {
     NormalizationResult,
     ResolutionResult,
 } from "../types/prompt.types";
 
-import {
-    ChatMessageActionRow,
-} from "../types/db.types";
-
+/**
+ * Convert normalization output into persisted action rows.
+ */
 export function toChatMessageActionRows(
     chatMessageId: string,
     cartId: string | null,
     normalization: NormalizationResult
 ): Partial<ChatMessageActionRow>[] {
-
     return normalization.actions.map((action) => ({
         chat_message_id: chatMessageId,
 
@@ -81,10 +83,12 @@ export function toChatMessageActionRows(
     }));
 }
 
+/**
+ * Apply resolution output onto a persisted action row.
+ */
 export function applyResolutionToActionRow(
     resolution: ResolutionResult
 ): Partial<ChatMessageActionRow> {
-
     return {
         resolved_action: resolution,
 

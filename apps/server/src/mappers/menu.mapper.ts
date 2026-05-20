@@ -14,7 +14,9 @@ import {
     ModifierOption,
 } from "../types/domain.types";
 
-export function toCategory(row: CategoryRow): Category {
+export function toCategory(
+    row: CategoryRow
+): Category {
     return {
         id: row.id,
         code: row.code,
@@ -24,7 +26,9 @@ export function toCategory(row: CategoryRow): Category {
     };
 }
 
-export function toMenuItem(row: MenuItemRow): MenuItem {
+export function toMenuItem(
+    row: MenuItemRow
+): MenuItem {
     return {
         id: row.id,
         categoryId: row.category_id,

@@ -1,7 +1,6 @@
 // apps/mobile/src/screens/splash.screen.tsx
 
-import React,
-{
+import React, {
     useEffect,
     useRef,
 } from "react";
@@ -9,24 +8,22 @@ import React,
 import {
     Animated,
     Easing,
+    Image,
     StyleSheet,
     Text,
     View,
-    Image,
 } from "react-native";
-
-// type Props = {
-//     onFinish: () => void;
-// };
 
 type Props = {
     fading?: boolean;
 };
 
+/**
+ * Initial branded loading screen with entrance and fade transitions.
+ */
 export default function SplashScreen({
                                          fading,
                                      }: Props) {
-
     const opacity =
         useRef(
             new Animated.Value(0)
@@ -43,17 +40,14 @@ export default function SplashScreen({
         ).current;
 
     useEffect(() => {
-
-        //
-        // entrance animation
-        //
-
+        /**
+         * Animate splash content into view.
+         */
         Animated.parallel([
             Animated.timing(
                 opacity,
                 {
                     toValue: 1,
-
                     duration: 900,
 
                     easing:
@@ -69,7 +63,6 @@ export default function SplashScreen({
                 translateY,
                 {
                     toValue: 0,
-
                     duration: 900,
 
                     easing:
@@ -82,19 +75,17 @@ export default function SplashScreen({
             ),
         ]).start();
 
-        //
-        // fade out
-        //
-
         if (!fading) {
             return;
         }
 
+        /**
+         * Fade the splash overlay out during app handoff.
+         */
         Animated.timing(
             overlayOpacity,
             {
                 toValue: 0,
-
                 duration: 650,
 
                 easing:
@@ -105,20 +96,19 @@ export default function SplashScreen({
                 useNativeDriver: true,
             }
         ).start();
-
     }, [fading]);
 
     return (
         <Animated.View
             style={[
                 styles.container,
+
                 {
                     opacity:
                     overlayOpacity,
                 },
             ]}
         >
-
             <Animated.View
                 style={{
                     opacity,
@@ -149,37 +139,33 @@ export default function SplashScreen({
                     <Dot delay={150} />
                     <Dot delay={300} />
                 </View>
-
             </Animated.View>
-
         </Animated.View>
     );
 }
 
+/**
+ * Animated loading indicator dot for splash state feedback.
+ */
 function Dot({
                  delay,
              }: {
     delay: number;
 }) {
-
     const opacity =
         useRef(
             new Animated.Value(0.2)
         ).current;
 
     useEffect(() => {
-
         Animated.loop(
             Animated.sequence([
                 Animated.timing(
                     opacity,
                     {
                         toValue: 1,
-
                         duration: 500,
-
                         delay,
-
                         useNativeDriver: true,
                     }
                 ),
@@ -188,15 +174,12 @@ function Dot({
                     opacity,
                     {
                         toValue: 0.2,
-
                         duration: 500,
-
                         useNativeDriver: true,
                     }
                 ),
             ])
         ).start();
-
     }, []);
 
     return (
@@ -211,81 +194,52 @@ function Dot({
 
 const styles =
     StyleSheet.create({
-
         container: {
             position: "absolute",
-
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-
             zIndex: 999,
-
-            backgroundColor:
-                "#1F3520",
-
-            justifyContent:
-                "center",
-
-            alignItems:
-                "center",
+            backgroundColor: "#1F3520",
+            justifyContent: "center",
+            alignItems: "center",
         },
+
         logo: {
             width: 220,
-
             height: 220,
-
             borderRadius: 48,
         },
 
         title: {
             marginTop: 28,
-
             fontSize: 34,
-
             fontWeight: "800",
-
             color: "#FFFFFF",
-
             textAlign: "center",
         },
 
         subtitle: {
             marginTop: 12,
-
             fontSize: 15,
-
             color: "#D8E2D0",
-
             textAlign: "center",
-
             letterSpacing: 0.3,
         },
 
         loadingRow: {
             marginTop: 36,
-
             flexDirection: "row",
-
-            justifyContent:
-                "center",
-
-            alignItems:
-                "center",
-
+            justifyContent: "center",
+            alignItems: "center",
             gap: 10,
         },
 
         dot: {
             width: 10,
-
             height: 10,
-
             borderRadius: 999,
-
-            backgroundColor:
-                "#DDE8D5",
+            backgroundColor: "#DDE8D5",
         },
-
     });

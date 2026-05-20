@@ -1,10 +1,17 @@
 // apps/server/src/services/cart.service.ts
 
+import { ChatRepository } from "../db/repositories/chat.repository";
 import { CartRepository } from "../db/repositories/cart.repository";
 import { MenuRepository } from "../db/repositories/menu.repository";
+
 import { MenuService } from "./menu.service";
-import { ChatRepository } from "../db/repositories/chat.repository";
-import type { ResolutionResult } from "../types/prompt.types";
+
+import type {
+    CartContext,
+    CartContextItem,
+    CartExecutionContext,
+} from "../types/cart.types";
+
 import type {
     CartItemModifierRow,
     CartItemRow,
@@ -12,8 +19,14 @@ import type {
     ModifierGroupRow,
     ModifierOptionRow,
 } from "../types/db.types";
-import {CartContext, CartContextItem, CartExecutionContext} from "../types/cart.types";
-import {MenuItem} from "../types/domain.types";
+
+import type {
+    MenuItem,
+} from "../types/domain.types";
+
+import type {
+    ResolutionResult,
+} from "../types/prompt.types";
 
 export interface CartExecutionService {
     executeResolvedAction(input: {
@@ -41,17 +54,26 @@ export class CartService implements CartExecutionService {
         return CartRepository.createCart();
     }
 
+    /**
+     * Build hydrated cart state including attached modifiers.
+     */
     async getCartContext(cartId: string): Promise<CartContext | null> {
-        const cart = await CartRepository.getCartById(cartId);
+        const cart =
+            await CartRepository.getCartById(cartId);
+
         if (!cart) {
             return null;
         }
 
-        const items = await CartRepository.listCartItems(cartId);
+        const items =
+            await CartRepository.listCartItems(cartId);
+
         const itemsWithModifiers: CartContextItem[] = [];
 
         for (const item of items) {
-            const modifiers = await CartRepository.listCartItemModifiers(item.id);
+            const modifiers =
+                await CartRepository.listCartItemModifiers(item.id);
+
             itemsWithModifiers.push({
                 ...item,
                 modifiers,
@@ -64,47 +86,62 @@ export class CartService implements CartExecutionService {
         };
     }
 
+    /**
+     * Execute resolved cart mutations produced by the AI pipeline.
+     */
     async executeResolvedAction(input: {
         cartId: string;
         chatMessageActionId: string;
         resolution: ResolutionResult;
         executionContext?: CartExecutionContext;
-    }):  Promise<{
+    }): Promise<{
         resolvedCartItemId?: string | null;
     }> {
-        const { cartId, resolution, executionContext } = input;
+        const {
+            cartId,
+            resolution,
+            executionContext,
+        } = input;
 
         if (resolution.status !== "success") {
             return {
-                resolvedCartItemId:
-                    null,
+                resolvedCartItemId: null,
             };
         }
 
         switch (resolution.action.type) {
             case "add_item": {
-                const item = await this.addItem(cartId, {
-                    menuItemId: resolution.action.menu_item_id,
-                    quantity: resolution.action.quantity,
-                    modifiers: resolution.action.modifiers,
-                });
+                const item =
+                    await this.addItem(cartId, {
+                        menuItemId:
+                        resolution.action.menu_item_id,
 
-                await ChatRepository.updateChatMessageAction(input.chatMessageActionId, {
-                    resolved_cart_item_id: item.id,
-                });
+                        quantity:
+                        resolution.action.quantity,
+
+                        modifiers:
+                        resolution.action.modifiers,
+                    });
+
+                await ChatRepository.updateChatMessageAction(
+                    input.chatMessageActionId,
+                    {
+                        resolved_cart_item_id: item.id,
+                    }
+                );
 
                 return {
-                    resolvedCartItemId:
-                    item.id,
+                    resolvedCartItemId: item.id,
                 };
             }
 
             case "remove_item": {
-                const targetCartItemId = await this.resolveTargetCartItemId(
-                    cartId,
-                    resolution,
-                    executionContext
-                );
+                const targetCartItemId =
+                    await this.resolveTargetCartItemId(
+                        cartId,
+                        resolution,
+                        executionContext
+                    );
 
                 if (!targetCartItemId) {
                     throw new Error("Unable to resolve cart item for remove_item.");
@@ -112,45 +149,54 @@ export class CartService implements CartExecutionService {
 
                 await this.removeItemById(targetCartItemId);
 
-                await ChatRepository.updateChatMessageAction(input.chatMessageActionId, {
-                    resolved_cart_item_id: targetCartItemId,
-                });
+                await ChatRepository.updateChatMessageAction(
+                    input.chatMessageActionId,
+                    {
+                        resolved_cart_item_id: targetCartItemId,
+                    }
+                );
 
                 return {
-                    resolvedCartItemId:
-                    targetCartItemId,
+                    resolvedCartItemId: targetCartItemId,
                 };
             }
 
             case "update_quantity": {
-                const targetCartItemId = await this.resolveTargetCartItemId(
-                    cartId,
-                    resolution,
-                    executionContext
-                );
+                const targetCartItemId =
+                    await this.resolveTargetCartItemId(
+                        cartId,
+                        resolution,
+                        executionContext
+                    );
 
                 if (!targetCartItemId) {
                     throw new Error("Unable to resolve cart item for update_quantity.");
                 }
 
-                await this.updateItemQuantity(targetCartItemId, resolution.action.quantity);
+                await this.updateItemQuantity(
+                    targetCartItemId,
+                    resolution.action.quantity
+                );
 
-                await ChatRepository.updateChatMessageAction(input.chatMessageActionId, {
-                    resolved_cart_item_id: targetCartItemId,
-                });
+                await ChatRepository.updateChatMessageAction(
+                    input.chatMessageActionId,
+                    {
+                        resolved_cart_item_id: targetCartItemId,
+                    }
+                );
 
                 return {
-                    resolvedCartItemId:
-                    targetCartItemId,
+                    resolvedCartItemId: targetCartItemId,
                 };
             }
 
             case "modify_item": {
-                const targetCartItemId = await this.resolveTargetCartItemId(
-                    cartId,
-                    resolution,
-                    executionContext
-                );
+                const targetCartItemId =
+                    await this.resolveTargetCartItemId(
+                        cartId,
+                        resolution,
+                        executionContext
+                    );
 
                 if (!targetCartItemId) {
                     throw new Error("Unable to resolve cart item for modify_item.");
@@ -162,18 +208,21 @@ export class CartService implements CartExecutionService {
                     resolution.action.modifiers
                 );
 
-                await ChatRepository.updateChatMessageAction(input.chatMessageActionId, {
-                    resolved_cart_item_id: targetCartItemId,
-                });
+                await ChatRepository.updateChatMessageAction(
+                    input.chatMessageActionId,
+                    {
+                        resolved_cart_item_id: targetCartItemId,
+                    }
+                );
 
                 return {
-                    resolvedCartItemId:
-                    targetCartItemId,
+                    resolvedCartItemId: targetCartItemId,
                 };
             }
 
             case "clear_cart":
                 await this.clearCart(cartId);
+
                 return {};
 
             case "view_cart":
@@ -184,6 +233,9 @@ export class CartService implements CartExecutionService {
         }
     }
 
+    /**
+     * Add a cart item or merge into an equivalent existing line.
+     */
     async addItem(
         cartId: string,
         input: {
@@ -192,7 +244,6 @@ export class CartService implements CartExecutionService {
             modifiers: Record<string, string>;
         }
     ): Promise<CartItemRow> {
-
         let menuItem:
             MenuItem | null | undefined =
             CartService.menuItemCache.get(
@@ -200,14 +251,12 @@ export class CartService implements CartExecutionService {
             );
 
         if (!menuItem) {
-
             menuItem =
                 await MenuService.getMenuItemById(
                     input.menuItemId
                 );
 
             if (menuItem) {
-
                 CartService.menuItemCache.set(
                     input.menuItemId,
                     menuItem
@@ -216,7 +265,6 @@ export class CartService implements CartExecutionService {
         }
 
         if (!menuItem) {
-
             throw new Error(
                 `Menu item not found: ${input.menuItemId}`
             );
@@ -225,13 +273,10 @@ export class CartService implements CartExecutionService {
         const completeModifiers =
             await MenuService.buildCompleteModifiers(
                 menuItem.id,
-                input.modifiers ?? {},
+                input.modifiers ?? {}
             );
 
-        //
-        // merge existing equivalent line
-        //
-
+        // Merge equivalent existing line items.
         const existing =
             await this.findEquivalentCartItem(
                 cartId,
@@ -240,7 +285,6 @@ export class CartService implements CartExecutionService {
             );
 
         if (existing) {
-
             const updated =
                 await this.updateItemQuantity(
                     existing.id,
@@ -251,10 +295,7 @@ export class CartService implements CartExecutionService {
             return updated!;
         }
 
-        //
-        // create new line
-        //
-
+        // Create a new cart line.
         const lineTotalCents =
             menuItem.priceCents *
             input.quantity;
@@ -297,7 +338,6 @@ export class CartService implements CartExecutionService {
     async removeItemById(
         cartItemId: string
     ): Promise<void> {
-
         const existing =
             await CartRepository.getCartItemById(
                 cartItemId
@@ -307,12 +347,8 @@ export class CartService implements CartExecutionService {
             return;
         }
 
-        //
-        // quantity decrement
-        //
-
+        // Decrement quantity before removing the entire line.
         if (existing.quantity > 1) {
-
             await CartRepository.updateCartItemQuantity(
                 cartItemId,
                 existing.quantity - 1
@@ -325,10 +361,7 @@ export class CartService implements CartExecutionService {
             return;
         }
 
-        //
-        // delete line item
-        //
-
+        // Remove the line item entirely.
         await CartRepository.deleteModifiersByCartItemId(
             cartItemId
         );
@@ -351,9 +384,7 @@ export class CartService implements CartExecutionService {
         cartItemId: string,
         quantity: number
     ): Promise<CartItemRow | null> {
-
         if (quantity <= 0) {
-
             await this.removeItemById(
                 cartItemId
             );
@@ -383,12 +414,14 @@ export class CartService implements CartExecutionService {
         return updated;
     }
 
+    /**
+     * Replace modifiers while preserving canonical merge semantics.
+     */
     async replaceItemModifiers(
         cartItemId: string,
         menuItemId: string,
         modifiers: Record<string, string>
     ): Promise<void> {
-
         const existing =
             await CartRepository.getCartItemById(
                 cartItemId
@@ -412,13 +445,10 @@ export class CartService implements CartExecutionService {
         const completeModifiers =
             await MenuService.buildCompleteModifiers(
                 menuItem.id,
-                modifiers ?? {},
+                modifiers ?? {}
             );
 
-        //
-        // find merge target
-        //
-
+        // Resolve equivalent merge target before in-place mutation.
         const equivalent =
             await this.findEquivalentCartItem(
                 existing.cart_id,
@@ -427,12 +457,8 @@ export class CartService implements CartExecutionService {
                 cartItemId
             );
 
-        //
-        // merge
-        //
-
+        // Merge into equivalent line item.
         if (equivalent) {
-
             await this.updateItemQuantity(
                 equivalent.id,
                 equivalent.quantity +
@@ -455,10 +481,7 @@ export class CartService implements CartExecutionService {
             return;
         }
 
-        //
-        // modify in-place
-        //
-
+        // Mutate existing line item in-place.
         await CartRepository.deleteModifiersByCartItemId(
             cartItemId
         );
@@ -485,6 +508,9 @@ export class CartService implements CartExecutionService {
         );
     }
 
+    /**
+     * Persist normalized modifier selections onto a cart item.
+     */
     private async attachModifiers(
         cartItemId: string,
         menuItemId: string,
@@ -497,7 +523,6 @@ export class CartService implements CartExecutionService {
         if (
             !CartService.modifierGroupsCache
         ) {
-
             CartService.modifierGroupsCache =
                 await MenuRepository.listModifierGroups();
         }
@@ -505,7 +530,6 @@ export class CartService implements CartExecutionService {
         if (
             !CartService.modifierOptionsCache
         ) {
-
             CartService.modifierOptionsCache =
                 await MenuRepository.listModifierOptions();
         }
@@ -517,7 +541,10 @@ export class CartService implements CartExecutionService {
             CartService.modifierOptionsCache;
 
         const modifierGroupByCode = new Map<string, ModifierGroupRow>(
-            modifierGroups.map((group) => [normalizeLookupKey(group.code), group])
+            modifierGroups.map((group) => [
+                normalizeLookupKey(group.code),
+                group,
+            ])
         );
 
         const modifierOptionsByGroupId = groupBy<ModifierOptionRow, string>(
@@ -526,11 +553,13 @@ export class CartService implements CartExecutionService {
         );
 
         for (const [modifierName, modifierValue] of Object.entries(modifiers)) {
-            const modifierGroupCode = `${menuItemId}__${modifierName}`;
+            const modifierGroupCode =
+                `${menuItemId}__${modifierName}`;
 
-            const group = modifierGroupByCode.get(
-                normalizeLookupKey(modifierGroupCode)
-            );
+            const group =
+                modifierGroupByCode.get(
+                    normalizeLookupKey(modifierGroupCode)
+                );
 
             if (!group) {
                 throw new Error(
@@ -538,11 +567,14 @@ export class CartService implements CartExecutionService {
                 );
             }
 
-            const option = (modifierOptionsByGroupId.get(group.id) ?? []).find(
-                (candidate) =>
-                    normalizeLookupKey(candidate.code) ===
-                    normalizeLookupKey(modifierValue)
-            );
+            const option =
+                (
+                    modifierOptionsByGroupId.get(group.id) ?? []
+                ).find(
+                    (candidate) =>
+                        normalizeLookupKey(candidate.code) ===
+                        normalizeLookupKey(modifierValue)
+                );
 
             if (!option) {
                 throw new Error(
@@ -568,20 +600,34 @@ export class CartService implements CartExecutionService {
         }
     }
 
+    /**
+     * Resolve execution references into concrete cart item ids.
+     */
     private async resolveTargetCartItemId(
         cartId: string,
         resolution: ResolutionResult,
         executionContext?: CartExecutionContext
     ): Promise<string | null> {
-        const reference = resolution.action.reference_resolution;
+        const reference =
+            resolution.action.reference_resolution;
 
         if (reference.cart_item_id) {
             return reference.cart_item_id;
         }
 
-        if (reference.type === "cart_position" && typeof reference.position === "number") {
-            const items = await CartRepository.listCartItems(cartId);
-            const item = items.find((candidate) => candidate.position === reference.position) ?? null;
+        if (
+            reference.type === "cart_position" &&
+            typeof reference.position === "number"
+        ) {
+            const items =
+                await CartRepository.listCartItems(cartId);
+
+            const item =
+                items.find(
+                    (candidate) =>
+                        candidate.position === reference.position
+                ) ?? null;
+
             return item?.id ?? null;
         }
 
@@ -589,9 +635,11 @@ export class CartService implements CartExecutionService {
             reference.type === "previous_action" &&
             typeof reference.action_index === "number"
         ) {
-            const previous = executionContext?.previousActions.find(
-                (action) => action.action_index === reference.action_index
-            );
+            const previous =
+                executionContext?.previousActions.find(
+                    (action) =>
+                        action.action_index === reference.action_index
+                );
 
             const directId =
                 previous?.resolved_cart_item_id ??
@@ -604,10 +652,15 @@ export class CartService implements CartExecutionService {
         }
 
         if (reference.type === "explicit_cart_reference") {
-            const items = await CartRepository.listCartItems(cartId);
-            const matches = items.filter(
-                (item) => item.menu_item_id === resolution.action.menu_item_id
-            );
+            const items =
+                await CartRepository.listCartItems(cartId);
+
+            const matches =
+                items.filter(
+                    (item) =>
+                        item.menu_item_id ===
+                        resolution.action.menu_item_id
+                );
 
             if (matches.length === 1) {
                 return matches[0].id;
@@ -620,7 +673,6 @@ export class CartService implements CartExecutionService {
     }
 
     async checkoutCart(cartId: string) {
-
         const cart =
             await this.getCartContext(cartId);
 
@@ -685,7 +737,6 @@ export class CartService implements CartExecutionService {
     }
 
     async getCartSummary(cartId: string) {
-
         const cart =
             await this.getCartContext(cartId);
 
@@ -722,6 +773,9 @@ export class CartService implements CartExecutionService {
         };
     }
 
+    /**
+     * Replace an existing cart line while preserving merge behavior.
+     */
     async replaceCartItem(input: {
         cartId: string;
         cartItemId: string;
@@ -731,11 +785,7 @@ export class CartService implements CartExecutionService {
             modifiers: Record<string, string>;
         };
     }) {
-
-        //
-        // existing source line
-        //
-
+        // Load the existing source line.
         const existing =
             await CartRepository.getCartItemById(
                 input.cartItemId
@@ -747,10 +797,7 @@ export class CartService implements CartExecutionService {
             );
         }
 
-        //
-        // validate menu item
-        //
-
+        // Validate target menu item.
         const menuItem =
             await MenuService.getMenuItemById(
                 input.body.menuItemId
@@ -765,13 +812,10 @@ export class CartService implements CartExecutionService {
         const completeModifiers =
             await MenuService.buildCompleteModifiers(
                 menuItem.id,
-                input.body.modifiers ?? {},
+                input.body.modifiers ?? {}
             );
 
-        //
-        // check equivalent merge target
-        //
-
+        // Resolve equivalent merge target.
         const equivalent =
             await this.findEquivalentCartItem(
                 input.cartId,
@@ -780,12 +824,8 @@ export class CartService implements CartExecutionService {
                 input.cartItemId
             );
 
-        //
-        // merge into existing equivalent line
-        //
-
+        // Merge into an existing equivalent line.
         if (equivalent) {
-
             await this.updateItemQuantity(
                 equivalent.id,
                 equivalent.quantity +
@@ -810,10 +850,7 @@ export class CartService implements CartExecutionService {
             );
         }
 
-        //
-        // modify source line in-place
-        //
-
+        // Modify the source line in-place.
         const unitPriceCents =
             menuItem.priceCents;
 
@@ -863,7 +900,6 @@ export class CartService implements CartExecutionService {
     async clearCart(
         cartId: string
     ): Promise<void> {
-
         await CartRepository.clearCartItems(
             cartId
         );
@@ -873,13 +909,15 @@ export class CartService implements CartExecutionService {
         );
     }
 
+    /**
+     * Find an equivalent cart line using canonical modifier identity.
+     */
     private async findEquivalentCartItem(
         cartId: string,
         menuItemId: string,
         modifiers: Record<string, string>,
         excludeCartItemId?: string
     ): Promise<CartContextItem | null> {
-
         const canonicalIdentity =
             buildModifierIdentity(
                 menuItemId,
@@ -921,7 +959,6 @@ function buildModifierIdentity(
     menuItemId: string,
     modifiers: Record<string, string>
 ): string {
-
     return [
         menuItemId,
 
@@ -945,11 +982,15 @@ function normalizeLookupKey(value: string): string {
         .replace(/\s+/g, " ");
 }
 
-function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
+function groupBy<T, K>(
+    items: T[],
+    keyFn: (item: T) => K
+): Map<K, T[]> {
     const map = new Map<K, T[]>();
 
     for (const item of items) {
         const key = keyFn(item);
+
         const bucket = map.get(key);
 
         if (bucket) {

@@ -1,9 +1,9 @@
 // src/mappers/cart.mapper.ts
 
 import {
-    CartRow,
-    CartItemRow,
     CartItemModifierRow,
+    CartItemRow,
+    CartRow,
 } from "../types/db.types";
 
 import {
@@ -36,8 +36,10 @@ export function toCartItem(
         position: row.position,
         sourceChatMessageId: row.source_chat_message_id,
         sourceActionIndex: row.source_action_index,
+
         sourceChatMessageActionId:
         row.source_chat_message_action_id,
+
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };

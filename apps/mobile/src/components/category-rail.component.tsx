@@ -3,154 +3,134 @@
 import React from "react";
 
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
 type Category = {
-  id: string;
+    id: string;
 
-  name: string;
+    name: string;
 };
 
 type Props = {
-  categories: Category[];
+    categories: Category[];
 
-  selectedCategoryId:
-      string | null;
+    selectedCategoryId:
+        string | null;
 
-  onPressCategory: (
-      categoryId: string
-  ) => void;
+    onPressCategory: (
+        categoryId: string
+    ) => void;
 };
 
+/**
+ * Horizontal category selector for menu navigation.
+ */
 export default function CategoryRail({
-                                       categories,
-                                       selectedCategoryId,
-                                       onPressCategory,
+                                         categories,
+                                         selectedCategoryId,
+                                         onPressCategory,
                                      }: Props) {
+    return (
+        <View style={styles.wrapper}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={
+                    false
+                }
+                contentContainerStyle={
+                    styles.content
+                }
+            >
+                {categories.map(
+                    (category) => {
+                        const active =
+                            category.id ===
+                            selectedCategoryId;
 
-  return (
-      <View style={styles.wrapper}>
+                        return (
+                            <Pressable
+                                key={category.id}
+                                style={[
+                                    styles.pill,
 
-        <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={
-              false
-            }
-            contentContainerStyle={
-              styles.content
-            }
-        >
-          {categories.map(
-              (category) => {
+                                    active &&
+                                    styles.pillActive,
+                                ]}
+                                onPress={() =>
+                                    onPressCategory(
+                                        category.id
+                                    )
+                                }
+                            >
+                                <Text
+                                    style={[
+                                        styles.pillText,
 
-                const active =
-                    category.id ===
-                    selectedCategoryId;
-
-                return (
-                    <Pressable
-                        key={category.id}
-                        style={[
-                          styles.pill,
-
-                          active &&
-                          styles.pillActive,
-                        ]}
-                        onPress={() =>
-                            onPressCategory(
-                                category.id
-                            )
-                        }
-                    >
-                      <Text
-                          style={[
-                            styles.pillText,
-
-                            active &&
-                            styles.pillTextActive,
-                          ]}
-                      >
-                        {category.name}
-                      </Text>
-                    </Pressable>
-                );
-              }
-          )}
-        </ScrollView>
-      </View>
-  );
+                                        active &&
+                                        styles.pillTextActive,
+                                    ]}
+                                >
+                                    {category.name}
+                                </Text>
+                            </Pressable>
+                        );
+                    }
+                )}
+            </ScrollView>
+        </View>
+    );
 }
 
 const styles =
     StyleSheet.create({
-
-      wrapper: {
-        marginTop: 2,
-
-        marginBottom: 4,
-      },
-
-      content: {
-        paddingHorizontal: 20,
-
-        paddingVertical: 6,
-
-        gap: 10,
-      },
-
-      pill: {
-        paddingHorizontal: 14,
-
-        paddingVertical: 8,
-
-        borderRadius: 999,
-
-        backgroundColor:
-            "#E5EADF",
-
-        borderWidth: 1,
-
-        borderColor:
-            "#D7E1D2",
-      },
-
-      pillActive: {
-        backgroundColor:
-            "#244229",
-
-        borderColor:
-            "#244229",
-
-        shadowColor: "#000",
-
-        shadowOpacity: 0.12,
-
-        shadowRadius: 8,
-
-        shadowOffset: {
-          width: 0,
-          height: 4,
+        wrapper: {
+            marginTop: 2,
+            marginBottom: 4,
         },
 
-        elevation: 3,
-      },
+        content: {
+            paddingHorizontal: 20,
+            paddingVertical: 6,
+            gap: 10,
+        },
 
-      pillText: {
-        fontSize: 14,
+        pill: {
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderRadius: 999,
+            backgroundColor: "#E5EADF",
+            borderWidth: 1,
+            borderColor: "#D7E1D2",
+        },
 
-        fontWeight: "700",
+        pillActive: {
+            backgroundColor: "#244229",
+            borderColor: "#244229",
+            shadowColor: "#000",
+            shadowOpacity: 0.12,
+            shadowRadius: 8,
 
-        color: "#4A5C49",
+            shadowOffset: {
+                width: 0,
+                height: 4,
+            },
 
-        letterSpacing: 0.2,
-      },
+            elevation: 3,
+        },
 
-      pillTextActive: {
-        color: "#F6F3EA",
-      },
+        pillText: {
+            fontSize: 14,
+            fontWeight: "700",
+            color: "#4A5C49",
+            letterSpacing: 0.2,
+        },
+
+        pillTextActive: {
+            color: "#F6F3EA",
+        },
     });

@@ -4,7 +4,9 @@ export type PromptMenuContext = {
     restaurant_name: string;
     categories: PromptMenuCategory[];
 
-    // Alias dictionary used during menu resolution.
+    /**
+     * Alias dictionary used during menu resolution.
+     */
     aliases: Record<string, string[]>;
 };
 
@@ -22,7 +24,9 @@ export type PromptMenuItem = {
     price: number;
     image_url: string;
 
-    // modifier_group -> modifier_options
+    /**
+     * modifier_group -> modifier_options
+     */
     modifiers: Record<string, string[]>;
 };
 

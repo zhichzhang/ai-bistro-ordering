@@ -1,7 +1,6 @@
 // apps/mobile/src/services/menu.service.ts
 
-import { apiService }
-    from "./api.service";
+import { apiService } from "./api.service";
 
 import type {
     MenuContextResponse,
@@ -11,59 +10,48 @@ import type {
 } from "../types/menu.types";
 
 export const menuService = {
-
-    //
-    // FULL MENU CONTEXT
-    //
-
+    /**
+     * Fetch the full menu payload.
+     */
     async getMenu() {
-
         return apiService.get<MenuContextResponse>(
             "/menu"
         );
     },
 
-    //
-    // MENU CONTEXT FOR AI
-    //
-
+    /**
+     * Fetch AI-oriented menu context.
+     */
     async getMenuContext() {
-
         return apiService.get<MenuContextResponse>(
             "/menu/context"
         );
     },
 
-    //
-    // CATEGORIES
-    //
-
+    /**
+     * Fetch all menu categories.
+     */
     async getCategories() {
-
         return apiService.get<MenuCategoriesResponse>(
             "/menu/categories"
         );
     },
 
-    //
-    // ITEMS
-    //
-
+    /**
+     * Fetch all menu items.
+     */
     async getItems() {
-
         return apiService.get<MenuItemsResponse>(
             "/menu/items"
         );
     },
 
-    //
-    // SINGLE ITEM
-    //
-
+    /**
+     * Fetch a single menu item.
+     */
     async getItem(
         itemId: string
     ) {
-
         return apiService.get<MenuItemResponse>(
             `/menu/items/${itemId}`
         );

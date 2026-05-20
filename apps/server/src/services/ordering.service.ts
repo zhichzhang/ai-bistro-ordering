@@ -2,29 +2,27 @@
 
 import { ChatRepository } from "../db/repositories/chat.repository";
 import { CartRepository } from "../db/repositories/cart.repository";
-import { NormalizationService } from "./normalization.service";
-import { ResolutionService } from "./resolution.service";
-
-import type {
-    NormalizationResult,
-    NormalizedAction,
-    ResolutionResult,
-} from "../types/prompt.types";
-
-import type {
-    ChatMessageActionRow,
-} from "../types/db.types";
 
 import { CartExecutionService } from "./cart.service";
+import { MenuService } from "./menu.service";
+import { NormalizationService } from "./normalization.service";
+import { PromptContextService } from "./prompt-context.service";
+import { ResolutionService } from "./resolution.service";
 
 import type {
     CartContext,
     CartExecutionContext,
 } from "../types/cart.types";
 
-import { MenuService } from "./menu.service";
+import type {
+    ChatMessageActionRow,
+} from "../types/db.types";
 
-import { PromptContextService } from "./prompt-context.service";
+import type {
+    NormalizationResult,
+    NormalizedAction,
+    ResolutionResult,
+} from "../types/prompt.types";
 
 export type HandleUserMessageInput = {
     sessionId: string;
@@ -46,7 +44,9 @@ export type HandleUserMessageResult = {
         | "error";
 };
 
-// Build human-readable execution summaries for chained action references.
+/**
+ * Build human-readable execution summaries for chained action references.
+ */
 function buildExecutionSummary(
     action: {
         type: string;
@@ -97,14 +97,15 @@ function buildExecutionSummary(
 }
 
 export class OrderingService {
-
     constructor(
         private readonly normalizationService: NormalizationService,
         private readonly resolutionService: ResolutionService,
-        private readonly cartExecutionService: CartExecutionService,
+        private readonly cartExecutionService: CartExecutionService
     ) {}
 
-    // Execute the full ordering pipeline for a user message.
+    /**
+     * Execute the full ordering pipeline for a user message.
+     */
     async handleUserMessage(
         input: HandleUserMessageInput
     ): Promise<HandleUserMessageResult> {
@@ -139,7 +140,9 @@ export class OrderingService {
         const recentActionContext =
             await this.buildRecentActionContext(chatSession.id);
 
-        // Resolve lightweight clarification replies before normalization.
+        /**
+         * Resolve lightweight clarification replies before normalization.
+         */
         const normalizedUserMessage =
             input.userMessage
                 .trim()
@@ -155,7 +158,6 @@ export class OrderingService {
                 "Which sandwich would you like"
             )
         ) {
-
             const clarificationCandidates =
                 await MenuService.findMenuItemCandidates(
                     normalizedUserMessage
@@ -164,14 +166,12 @@ export class OrderingService {
             if (
                 clarificationCandidates.length === 1
             ) {
-
                 input.userMessage =
                     `Add ${
                         clarificationCandidates[0].name
                     }`;
             }
         }
-
 
         const normalization =
             await this.normalizationService.normalizeMessage({
@@ -196,7 +196,6 @@ export class OrderingService {
                 userMessage:
                 input.userMessage,
             });
-
 
         const userMessageRow =
             await ChatRepository.createChatMessage({
@@ -269,7 +268,6 @@ export class OrderingService {
 
             const resolution =
                 await this.resolutionService.resolveAction({
-
                     currentCartContext:
                         PromptContextService
                             .serializeCartContext(
@@ -335,7 +333,6 @@ export class OrderingService {
                     await this
                         .cartExecutionService
                         .executeResolvedAction({
-
                             cartId:
                             cart.id,
 
@@ -346,7 +343,6 @@ export class OrderingService {
 
                             executionContext,
                         });
-
                 } catch (error) {
                     executionErrors.push({
                         actionIndex:
@@ -423,7 +419,9 @@ export class OrderingService {
         };
     }
 
-    // Build the current hydrated cart context with modifiers.
+    /**
+     * Build the current hydrated cart context with modifiers.
+     */
     private async buildCurrentCartContext(
         cartId: string
     ): Promise<CartContext | null> {
@@ -455,7 +453,9 @@ export class OrderingService {
         };
     }
 
-    // Load recent actions for prompt grounding.
+    /**
+     * Load recent actions for prompt grounding.
+     */
     private async buildRecentActionContext(
         chatSessionId: string
     ): Promise<ChatMessageActionRow[]> {
@@ -468,7 +468,9 @@ export class OrderingService {
         return actions.slice(-5);
     }
 
-    // Build execution memory for chained action resolution.
+    /**
+     * Build execution memory for chained action resolution.
+     */
     private async buildExecutionContext(
         userMessageId: string,
         currentActionIndex: number
@@ -529,7 +531,9 @@ export class OrderingService {
         };
     }
 
-    // Persist normalized actions before resolution/execution.
+    /**
+     * Persist normalized actions before resolution and execution.
+     */
     private async persistNormalizedActions(input: {
         chatMessageId: string;
         cartId: string | null;
@@ -596,7 +600,9 @@ export class OrderingService {
         return rows;
     }
 
-    // Map resolution output into persisted action state.
+    /**
+     * Map resolution output into persisted action state.
+     */
     private mapResolutionToActionPatch(
         resolution: ResolutionResult
     ): Partial<ChatMessageActionRow> {
@@ -612,7 +618,9 @@ export class OrderingService {
         };
     }
 
-    // Build user-facing assistant response text.
+    /**
+     * Build user-facing assistant response text.
+     */
     private buildAssistantMessage(
         resolutions: ResolutionResult[],
         executionErrors: {

@@ -1,9 +1,12 @@
 // src/db/repositories/menu.repository.ts
 
 import { supabase } from "../supabase";
+
 import { throwIfError } from "./base.repository";
+
 import type {
-    CategoryRow, MenuItemModifierGroupRow,
+    CategoryRow,
+    MenuItemModifierGroupRow,
     MenuItemRow,
     ModifierGroupRow,
     ModifierOptionRow,
@@ -17,6 +20,7 @@ export class MenuRepository {
             .order("sort_order", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as CategoryRow[];
     }
 
@@ -27,10 +31,13 @@ export class MenuRepository {
             .order("sort_order", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as MenuItemRow[];
     }
 
-    static async getMenuItemById(id: string): Promise<MenuItemRow | null> {
+    static async getMenuItemById(
+        id: string
+    ): Promise<MenuItemRow | null> {
         const { data, error } = await supabase
             .from("menu_items")
             .select("*")
@@ -38,6 +45,7 @@ export class MenuRepository {
             .maybeSingle();
 
         throwIfError(error);
+
         return (data as MenuItemRow | null) ?? null;
     }
 
@@ -48,6 +56,7 @@ export class MenuRepository {
             .order("created_at", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as ModifierGroupRow[];
     }
 
@@ -58,6 +67,7 @@ export class MenuRepository {
             .order("sort_order", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as ModifierOptionRow[];
     }
 
@@ -71,9 +81,13 @@ export class MenuRepository {
             .order("sort_order", { ascending: true });
 
         throwIfError(error);
+
         return (data ?? []) as ModifierOptionRow[];
     }
 
+    /**
+     * Load menu item to modifier group relationships.
+     */
     static async listMenuItemModifierGroups(): Promise<MenuItemModifierGroupRow[]> {
         const { data, error } = await supabase
             .from("menu_item_modifier_groups")

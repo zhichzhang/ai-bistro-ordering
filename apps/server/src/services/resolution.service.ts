@@ -21,14 +21,15 @@ export type ResolveActionInput = {
 };
 
 export class ResolutionService {
-
     private static promptTemplatePromise: Promise<string> | null = null;
 
     constructor(
         private readonly llm: TextGenerationClient
     ) {}
 
-    // Resolve normalized actions into executable cart operations.
+    /**
+     * Resolve normalized actions into executable cart operations.
+     */
     async resolveAction(
         input: ResolveActionInput
     ): Promise<ResolutionResult> {
@@ -67,7 +68,9 @@ export class ResolutionService {
         return parsed as ResolutionResult;
     }
 
-    // Load and cache the resolution prompt template.
+    /**
+     * Load and cache the resolution prompt template.
+     */
     private static async loadPromptTemplate(): Promise<string> {
         if (!this.promptTemplatePromise) {
             this.promptTemplatePromise = readPromptFile([
@@ -86,7 +89,9 @@ export class ResolutionService {
     }
 }
 
-// Load the first available prompt file candidate.
+/**
+ * Load the first available prompt template candidate.
+ */
 async function readPromptFile(
     candidates: string[]
 ): Promise<string> {
@@ -105,7 +110,9 @@ async function readPromptFile(
     );
 }
 
-// Extract structured JSON from model output.
+/**
+ * Extract structured JSON payloads from model output.
+ */
 function parseJsonFromModelOutput(
     raw: string
 ): unknown {
@@ -143,11 +150,12 @@ function parseJsonFromModelOutput(
     return JSON.parse(trimmed);
 }
 
-// Validate resolution payload shape before execution.
+/**
+ * Validate resolution payload shape before execution.
+ */
 function validateResolutionResult(
     obj: any
 ): void {
-
     if (!obj || typeof obj !== "object") {
         throw new Error("Resolution result must be an object.");
     }
@@ -156,7 +164,7 @@ function validateResolutionResult(
         typeof obj.intent !== "string"
     ) {
         throw new Error(
-            "Resolution result missing intent.",
+            "Resolution result missing intent."
         );
     }
 
@@ -164,7 +172,7 @@ function validateResolutionResult(
         typeof obj.status !== "string"
     ) {
         throw new Error(
-            "Resolution result missing status.",
+            "Resolution result missing status."
         );
     }
 
@@ -173,7 +181,7 @@ function validateResolutionResult(
         typeof obj.action !== "object"
     ) {
         throw new Error(
-            "Resolution result missing action.",
+            "Resolution result missing action."
         );
     }
 
@@ -197,7 +205,7 @@ function validateResolutionResult(
         typeof action.type !== "string"
     ) {
         throw new Error(
-            "Resolution action missing type.",
+            "Resolution action missing type."
         );
     }
 
@@ -207,19 +215,19 @@ function validateResolutionResult(
         typeof action.target_text !== "string"
     ) {
         throw new Error(
-            "Resolution action invalid target_text.",
+            "Resolution action invalid target_text."
         );
     }
 
     // Validate required menu item references.
     if (
         menuItemRequiredIntents.has(
-            String(obj.intent),
+            String(obj.intent)
         ) &&
         typeof action.menu_item_id !== "string"
     ) {
         throw new Error(
-            "Resolution action missing menu_item_id.",
+            "Resolution action missing menu_item_id."
         );
     }
 
@@ -229,19 +237,19 @@ function validateResolutionResult(
         typeof action.name !== "string"
     ) {
         throw new Error(
-            "Resolution action invalid name.",
+            "Resolution action invalid name."
         );
     }
 
     // Validate required quantity-bearing actions.
     if (
         quantityRequiredIntents.has(
-            String(obj.intent),
+            String(obj.intent)
         ) &&
         typeof action.quantity !== "number"
     ) {
         throw new Error(
-            "Resolution action missing quantity.",
+            "Resolution action missing quantity."
         );
     }
 
@@ -254,7 +262,7 @@ function validateResolutionResult(
         )
     ) {
         throw new Error(
-            "Resolution action invalid modifiers.",
+            "Resolution action invalid modifiers."
         );
     }
 
@@ -268,7 +276,7 @@ function validateResolutionResult(
         )
     ) {
         throw new Error(
-            "Resolution action invalid reference_resolution.",
+            "Resolution action invalid reference_resolution."
         );
     }
 
@@ -278,7 +286,7 @@ function validateResolutionResult(
         typeof obj.question !== "string"
     ) {
         throw new Error(
-            "Resolution result invalid question.",
+            "Resolution result invalid question."
         );
     }
 
@@ -288,7 +296,7 @@ function validateResolutionResult(
         !Array.isArray(obj.suggestions)
     ) {
         throw new Error(
-            "Resolution result invalid suggestions.",
+            "Resolution result invalid suggestions."
         );
     }
 
@@ -298,7 +306,7 @@ function validateResolutionResult(
         typeof obj.confidence !== "number"
     ) {
         throw new Error(
-            "Resolution result invalid confidence.",
+            "Resolution result invalid confidence."
         );
     }
 }

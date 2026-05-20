@@ -6,29 +6,21 @@ import type {
     PromptMenuItem,
 } from "../types/menu.types";
 
-// ============================================
-// RAW BACKEND TYPES
-// ============================================
+// Raw backend types
 
 type RawMenuJson = {
     restaurant_name: string;
 
     categories: {
         id: string;
-
         name: string;
-
         sort_order: number;
 
         items: {
             id: string;
-
             name: string;
-
             category: string;
-
             price: number;
-
             image_url: string;
 
             modifiers?: Record<
@@ -44,10 +36,9 @@ type RawMenuJson = {
     >;
 };
 
-// ============================================
-// NORMALIZE MODIFIERS
-// ============================================
-
+/**
+ * Normalize backend modifier keys into prompt-safe modifier names.
+ */
 function normalizeModifiers(
     modifiers?: Record<
         string,
@@ -71,22 +62,17 @@ function normalizeModifiers(
     );
 }
 
-// ============================================
-// TRANSFORM ITEM
-// ============================================
-
+/**
+ * Transform a raw backend menu item into prompt context format.
+ */
 function transformMenuItem(
     item: RawMenuJson["categories"][number]["items"][number]
 ): PromptMenuItem {
     return {
         id: item.id,
-
         name: item.name,
-
         category: item.category,
-
         price: item.price,
-
         image_url: item.image_url,
 
         modifiers:
@@ -96,16 +82,14 @@ function transformMenuItem(
     };
 }
 
-// ============================================
-// TRANSFORM CATEGORY
-// ============================================
-
+/**
+ * Transform a backend category into prompt context format.
+ */
 function transformCategory(
     category: RawMenuJson["categories"][number]
 ): PromptMenuCategory {
     return {
         id: category.id,
-
         name: category.name,
 
         sort_order:
@@ -118,10 +102,9 @@ function transformCategory(
     };
 }
 
-// ============================================
-// MAIN TRANSFORM
-// ============================================
-
+/**
+ * Convert backend menu JSON into AI prompt context structure.
+ */
 export function transformMenuJson(
     raw: RawMenuJson
 ): PromptMenuContext {

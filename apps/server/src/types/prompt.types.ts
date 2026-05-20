@@ -25,6 +25,7 @@ export type NormalizedReferenceType =
 
 export type NormalizedAction = {
     index: number;
+
     type:
         | "add_item"
         | "remove_item"
@@ -34,11 +35,14 @@ export type NormalizedAction = {
         | "view_cart"
         | "clarify"
         | "unknown";
+
     target_text: string;
     quantity: number;
     modifiers: Record<string, string>;
 
-    // Cross-action/cart reference metadata.
+    /**
+     * Cross-action and cart reference metadata.
+     */
     reference: {
         type: NormalizedReferenceType;
         action_index: number | null;
@@ -93,7 +97,9 @@ export type ResolvedAction = {
     quantity: number;
     modifiers: Record<string, string>;
 
-    // Final resolved reference linkage.
+    /**
+     * Final resolved reference linkage.
+     */
     reference_resolution: {
         type:
             | "none"
@@ -101,6 +107,7 @@ export type ResolvedAction = {
             | "cart_position"
             | "cart_item_id"
             | "explicit_cart_reference";
+
         action_index: number | null;
         cart_item_id: string | null;
         position: number | null;

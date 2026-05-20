@@ -19,14 +19,15 @@ export type NormalizeMessageInput = {
 };
 
 export class NormalizationService {
-
     private static promptTemplatePromise: Promise<string> | null = null;
 
     constructor(
         private readonly llm: TextGenerationClient
     ) {}
 
-    // Normalize raw user input into structured ordering actions.
+    /**
+     * Normalize raw user input into structured ordering actions.
+     */
     async normalizeMessage(
         input: NormalizeMessageInput
     ): Promise<NormalizationResult> {
@@ -62,7 +63,9 @@ export class NormalizationService {
         return parsed as NormalizationResult;
     }
 
-    // Load and cache the normalization prompt template.
+    /**
+     * Load and cache the normalization prompt template.
+     */
     private static async loadPromptTemplate(): Promise<string> {
         if (!this.promptTemplatePromise) {
             this.promptTemplatePromise = readPromptFile([
@@ -81,7 +84,9 @@ export class NormalizationService {
     }
 }
 
-// Load the first available prompt file candidate.
+/**
+ * Load the first available prompt template candidate.
+ */
 async function readPromptFile(
     candidates: string[]
 ): Promise<string> {
@@ -100,7 +105,9 @@ async function readPromptFile(
     );
 }
 
-// Extract structured JSON from model output.
+/**
+ * Extract structured JSON payloads from model output.
+ */
 function parseJsonFromModelOutput(
     raw: string
 ): unknown {
@@ -138,11 +145,12 @@ function parseJsonFromModelOutput(
     return JSON.parse(trimmed);
 }
 
-// Validate normalization payload shape before execution.
+/**
+ * Validate normalization payload shape before execution.
+ */
 function validateNormalizationResult(
     obj: any
 ): void {
-
     if (!obj || typeof obj !== "object") {
         throw new Error("Normalization result must be an object.");
     }
@@ -157,7 +165,6 @@ function validateNormalizationResult(
     ]);
 
     for (const a of obj.actions) {
-
         if (!a || typeof a !== "object") {
             throw new Error("Normalization action invalid.");
         }
@@ -173,7 +180,7 @@ function validateNormalizationResult(
             typeof a.target_text !== "string"
         ) {
             throw new Error(
-                "Normalization action invalid target_text.",
+                "Normalization action invalid target_text."
             );
         }
 
@@ -185,7 +192,7 @@ function validateNormalizationResult(
             typeof a.quantity !== "number"
         ) {
             throw new Error(
-                `Normalization action missing quantity for type=${a.type}.`,
+                `Normalization action missing quantity for type=${a.type}.`
             );
         }
 
@@ -198,7 +205,7 @@ function validateNormalizationResult(
             )
         ) {
             throw new Error(
-                "Normalization action invalid modifiers.",
+                "Normalization action invalid modifiers."
             );
         }
 
@@ -212,7 +219,7 @@ function validateNormalizationResult(
             )
         ) {
             throw new Error(
-                "Normalization action invalid reference.",
+                "Normalization action invalid reference."
             );
         }
 
@@ -222,7 +229,7 @@ function validateNormalizationResult(
             !Array.isArray(a.depends_on)
         ) {
             throw new Error(
-                "Normalization action invalid depends_on.",
+                "Normalization action invalid depends_on."
             );
         }
 
@@ -232,7 +239,7 @@ function validateNormalizationResult(
             typeof a.raw_text !== "string"
         ) {
             throw new Error(
-                "Normalization action invalid raw_text.",
+                "Normalization action invalid raw_text."
             );
         }
     }
@@ -243,7 +250,7 @@ function validateNormalizationResult(
         typeof obj.confidence !== "number"
     ) {
         throw new Error(
-            "Normalization result invalid confidence.",
+            "Normalization result invalid confidence."
         );
     }
 }

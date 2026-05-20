@@ -11,17 +11,17 @@ if (!API_BASE_URL) {
 
 type RequestOptions = {
     method?: string;
-
     headers?: Record<string, string>;
-
     body?: unknown;
 };
 
+/**
+ * Execute a typed API request against the backend service.
+ */
 async function request<T>(
     endpoint: string,
     options: RequestOptions = {}
 ): Promise<T> {
-
     const response =
         await fetch(
             `${API_BASE_URL}${endpoint}`,
@@ -46,7 +46,6 @@ async function request<T>(
         );
 
     if (!response.ok) {
-
         const text =
             await response.text();
 
@@ -60,21 +59,24 @@ async function request<T>(
 }
 
 export const apiService = {
-
+    /**
+     * Execute a GET request.
+     */
     get<T>(
         endpoint: string
     ): Promise<T> {
-
         return request<T>(
             endpoint
         );
     },
 
+    /**
+     * Execute a POST request.
+     */
     post<T>(
         endpoint: string,
         body?: unknown
     ): Promise<T> {
-
         return request<T>(
             endpoint,
             {
@@ -84,11 +86,13 @@ export const apiService = {
         );
     },
 
+    /**
+     * Execute a PATCH request.
+     */
     patch<T>(
         endpoint: string,
         body?: unknown
     ): Promise<T> {
-
         return request<T>(
             endpoint,
             {
@@ -98,11 +102,13 @@ export const apiService = {
         );
     },
 
+    /**
+     * Execute a PUT request.
+     */
     put<T>(
         endpoint: string,
         body?: unknown
     ): Promise<T> {
-
         return request<T>(
             endpoint,
             {
@@ -112,10 +118,12 @@ export const apiService = {
         );
     },
 
+    /**
+     * Execute a DELETE request.
+     */
     delete<T>(
         endpoint: string
     ): Promise<T> {
-
         return request<T>(
             endpoint,
             {

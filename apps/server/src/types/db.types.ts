@@ -58,7 +58,6 @@ export type ChatMessageRow = {
     chat_session_id: string;
     role: "user" | "assistant" | "system";
     content: string;
-    // Structured AI payload persisted for replay/debugging.
     parsed_action: Record<string, unknown> | null;
     error_type: string | null;
     created_at: string;
@@ -68,8 +67,8 @@ export type ChatMessageActionRow = {
     id: string;
     chat_message_id: string;
     cart_id: string | null;
-    // Normalized action ordering from the orchestration layer.
     action_index: number;
+
     action_type:
         | "add_item"
         | "remove_item"
@@ -79,6 +78,7 @@ export type ChatMessageActionRow = {
         | "view_cart"
         | "clarify"
         | "unknown";
+
     intent:
         | "multi_action"
         | "add_item"
@@ -90,12 +90,14 @@ export type ChatMessageActionRow = {
         | "clarify"
         | "unknown"
         | "invalid_item";
+
     status:
         | "pending"
         | "success"
         | "needs_clarification"
         | "error"
         | "skipped";
+
     normalized_action: Record<string, unknown>;
     resolved_action: Record<string, unknown> | null;
     question: string | null;
@@ -104,7 +106,7 @@ export type ChatMessageActionRow = {
     error_message: string | null;
     confidence: number;
     depends_on: number[];
-    // Reference linkage used for chained cart operations.
+
     reference_type:
         | "none"
         | "previous_action"
@@ -112,6 +114,7 @@ export type ChatMessageActionRow = {
         | "cart_position"
         | "explicit_cart_reference"
         | null;
+
     reference_action_index: number | null;
     reference_cart_item_id: string | null;
     reference_cart_position: number | null;
@@ -133,7 +136,6 @@ export type CartItemRow = {
     unit_price_cents: number;
     line_total_cents: number;
     note: string | null;
-    // Stable frontend/render ordering.
     position: number;
     source_chat_message_id: string | null;
     source_action_index: number | null;

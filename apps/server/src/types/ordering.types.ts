@@ -5,7 +5,7 @@ import type {
     ResolutionResult,
 } from "./prompt.types";
 
-import {
+import type {
     CartContext,
     CartContextDto,
 } from "./cart.types";
@@ -40,15 +40,14 @@ export type OrderingExecutionResult = {
 
 export type OrderingAssistantResponse = {
     message: string;
-
     question?: string | null;
-
     suggestions?: string[];
-
     requiresClarification: boolean;
 };
 
-// Internal orchestration pipeline result payload.
+/**
+ * Internal orchestration pipeline result payload.
+ */
 type OrderingPipelineResult = {
     status:
         | "success"
@@ -59,11 +58,13 @@ type OrderingPipelineResult = {
     assistantMessage: string;
     normalization?: NormalizationResult;
     resolutions: ResolutionResult[];
+
     executionErrors: {
         actionIndex: number;
         message: string;
         errorType: string;
     }[];
+
     cart: CartContextDto;
     sessionId: string;
     cartId: string;

@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import { MenuService } from "../services/menu.service";
 
 /**
@@ -9,11 +10,10 @@ export function createMenuRouter(): Router {
 
     /**
      * GET /menu
-     * Returns all menu categories.
+     * Returns prompt-safe menu context.
      */
     router.get("/", async (_req, res, next) => {
         try {
-
             const context =
                 await MenuService.getPromptMenuContext();
 
@@ -30,9 +30,11 @@ export function createMenuRouter(): Router {
      */
     router.get("/categories", async (_req, res, next) => {
         try {
-            const categories = await MenuService.listCategories();
+            const categories =
+                await MenuService.listCategories();
 
             res.json({ categories });
+
         } catch (error) {
             next(error);
         }
@@ -44,9 +46,11 @@ export function createMenuRouter(): Router {
      */
     router.get("/items", async (_req, res, next) => {
         try {
-            const items = await MenuService.listMenuItems();
+            const items =
+                await MenuService.listMenuItems();
 
             res.json({ items });
+
         } catch (error) {
             next(error);
         }
@@ -58,9 +62,10 @@ export function createMenuRouter(): Router {
      */
     router.get("/items/:itemId", async (req, res, next) => {
         try {
-            const item = await MenuService.getMenuItemById(
-                req.params.itemId
-            );
+            const item =
+                await MenuService.getMenuItemById(
+                    req.params.itemId
+                );
 
             if (!item) {
                 res.status(404).json({
@@ -74,6 +79,7 @@ export function createMenuRouter(): Router {
             }
 
             res.json({ item });
+
         } catch (error) {
             next(error);
         }
@@ -89,6 +95,7 @@ export function createMenuRouter(): Router {
                 await MenuService.getPromptMenuContext();
 
             res.json({ context });
+
         } catch (error) {
             next(error);
         }
