@@ -56,6 +56,7 @@ export type CartItem = {
     unitPriceCents: number;
     lineTotalCents: number;
     note: string | null;
+    // Stable frontend/render ordering.
     position: number;
     sourceChatMessageId: string | null;
     sourceActionIndex: number | null;
@@ -84,14 +85,17 @@ export type ChatMessage = {
     chatSessionId: string;
     role: "user" | "assistant" | "system";
     content: string;
+    // Structured assistant/user action payload.
     parsedAction: Record<string, unknown> | null;
     errorType: string | null;
     createdAt: string;
 };
+
 export type ChatMessageAction = {
     id: string;
     chatMessageId: string;
     cartId: string | null;
+    // Normalized orchestration ordering.
     actionIndex: number;
     actionType: string;
     intent: string;
@@ -104,6 +108,7 @@ export type ChatMessageAction = {
     errorMessage: string | null;
     confidence: number;
     dependsOn: number[];
+    // Cross-action/cart reference linkage.
     referenceType: string | null;
     referenceActionIndex: number | null;
     referenceCartItemId: string | null;

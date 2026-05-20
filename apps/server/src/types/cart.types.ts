@@ -70,14 +70,10 @@ export type CartExecutionPreviousAction = {
     action_index: number;
     resolved_cart_item_id?: string | null;
     referenced_cart_item_id?: string | null;
-
-    // Semantic prompt memory
+    // Semantic action memory used by downstream prompt execution
     action_type?: string | null;
-
     target_text?: string | null;
-
     menu_item_id?: string | null;
-
     summary?: string | null;
 };
 

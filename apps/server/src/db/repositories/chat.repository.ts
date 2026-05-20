@@ -193,4 +193,35 @@ export class ChatRepository {
         ) as unknown as
             ChatMessageActionRow[];
     }
+
+    /**
+     * Load the latest assistant message for clarification grounding.
+     */
+    static async getLatestAssistantMessage(
+        chatSessionId: string
+    ) {
+
+        const { data, error } =
+            await supabase
+                .from("chat_messages")
+                .select("*")
+                .eq(
+                    "chat_session_id",
+                    chatSessionId
+                )
+                .eq(
+                    "role",
+                    "assistant"
+                )
+                .order(
+                    "created_at",
+                    { ascending: false }
+                )
+                .limit(1)
+                .maybeSingle();
+
+        throwIfError(error);
+
+        return data;
+    }
 }

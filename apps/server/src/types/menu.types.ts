@@ -3,6 +3,8 @@
 export type PromptMenuContext = {
     restaurant_name: string;
     categories: PromptMenuCategory[];
+
+    // Alias dictionary used during menu resolution.
     aliases: Record<string, string[]>;
 };
 
@@ -19,6 +21,8 @@ export type PromptMenuItem = {
     category: string;
     price: number;
     image_url: string;
+
+    // modifier_group -> modifier_options
     modifiers: Record<string, string[]>;
 };
 

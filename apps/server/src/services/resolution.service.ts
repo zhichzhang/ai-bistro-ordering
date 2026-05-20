@@ -1,7 +1,14 @@
+// apps/server/src/services/resolution.service.ts
+
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+
 import { MenuService } from "./menu.service";
-import type { NormalizedAction, ResolutionResult } from "../types/prompt.types";
+
+import type {
+    NormalizedAction,
+    ResolutionResult,
+} from "../types/prompt.types";
 
 export interface TextGenerationClient {
     generate(prompt: string): Promise<string>;
@@ -14,33 +21,64 @@ export type ResolveActionInput = {
 };
 
 export class ResolutionService {
+
     private static promptTemplatePromise: Promise<string> | null = null;
 
-    constructor(private readonly llm: TextGenerationClient) {}
+    constructor(
+        private readonly llm: TextGenerationClient
+    ) {}
 
-    async resolveAction(input: ResolveActionInput): Promise<ResolutionResult> {
-        const promptTemplate = await ResolutionService.loadPromptTemplate();
-        const menuContext = await MenuService.getPromptMenuContext();
+    // Resolve normalized actions into executable cart operations.
+    async resolveAction(
+        input: ResolveActionInput
+    ): Promise<ResolutionResult> {
+        const promptTemplate =
+            await ResolutionService.loadPromptTemplate();
+
+        const menuContext =
+            await MenuService.getPromptMenuContext();
 
         const prompt = promptTemplate
-            .replace("{{MENU_CONTEXT}}", JSON.stringify(menuContext, null, 2))
-            .replace("{{CURRENT_CART_CONTEXT}}", input.currentCartContext)
-            .replace("{{EXECUTION_CONTEXT}}", input.executionContext)
-            .replace("{{NORMALIZED_ACTION}}", JSON.stringify(input.normalizedAction, null, 2));
+            .replace(
+                "{{MENU_CONTEXT}}",
+                JSON.stringify(menuContext, null, 2)
+            )
+            .replace(
+                "{{CURRENT_CART_CONTEXT}}",
+                input.currentCartContext
+            )
+            .replace(
+                "{{EXECUTION_CONTEXT}}",
+                input.executionContext
+            )
+            .replace(
+                "{{NORMALIZED_ACTION}}",
+                JSON.stringify(input.normalizedAction, null, 2)
+            );
 
-        const raw = await this.llm.generate(prompt);
-        const parsed = parseJsonFromModelOutput(raw);
+        const raw =
+            await this.llm.generate(prompt);
+
+        const parsed =
+            parseJsonFromModelOutput(raw);
 
         validateResolutionResult(parsed);
 
         return parsed as ResolutionResult;
     }
 
+    // Load and cache the resolution prompt template.
     private static async loadPromptTemplate(): Promise<string> {
         if (!this.promptTemplatePromise) {
             this.promptTemplatePromise = readPromptFile([
-                path.resolve(process.cwd(), "src/prompts/menu-resolution-lite.txt"),
-                path.resolve(process.cwd(), "apps/server/src/prompts/menu-resolution-lite.txt"),
+                path.resolve(
+                    process.cwd(),
+                    "src/prompts/menu-resolution-lite.txt"
+                ),
+                path.resolve(
+                    process.cwd(),
+                    "apps/server/src/prompts/menu-resolution-lite.txt"
+                ),
             ]);
         }
 
@@ -48,7 +86,10 @@ export class ResolutionService {
     }
 }
 
-async function readPromptFile(candidates: string[]): Promise<string> {
+// Load the first available prompt file candidate.
+async function readPromptFile(
+    candidates: string[]
+): Promise<string> {
     let lastError: unknown = null;
 
     for (const filePath of candidates) {
@@ -64,40 +105,48 @@ async function readPromptFile(candidates: string[]): Promise<string> {
     );
 }
 
-// function serializeContext(value: unknown): string {
-//     if (typeof value === "string") {
-//         return value;
-//     }
-//
-//     if (value === undefined) {
-//         return "null";
-//     }
-//
-//     return JSON.stringify(value, null, 2);
-// }
+// Extract structured JSON from model output.
+function parseJsonFromModelOutput(
+    raw: string
+): unknown {
+    const trimmed =
+        raw.trim();
 
-function parseJsonFromModelOutput(raw: string): unknown {
-    const trimmed = raw.trim();
+    const fenced =
+        trimmed.match(
+            /^```(?:json)?\s*([\s\S]*?)\s*```$/i
+        );
 
-    const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
     if (fenced?.[1]) {
         return JSON.parse(fenced[1]);
     }
 
-    const firstBrace = trimmed.indexOf("{");
-    const lastBrace = trimmed.lastIndexOf("}");
+    const firstBrace =
+        trimmed.indexOf("{");
 
-    if (firstBrace >= 0 && lastBrace >= firstBrace) {
-        const candidate = trimmed.slice(firstBrace, lastBrace + 1);
+    const lastBrace =
+        trimmed.lastIndexOf("}");
+
+    if (
+        firstBrace >= 0 &&
+        lastBrace >= firstBrace
+    ) {
+        const candidate =
+            trimmed.slice(
+                firstBrace,
+                lastBrace + 1
+            );
+
         return JSON.parse(candidate);
     }
 
     return JSON.parse(trimmed);
 }
 
-// apps/server/src/services/resolution.service.ts
-
-function validateResolutionResult(obj: any): void {
+// Validate resolution payload shape before execution.
+function validateResolutionResult(
+    obj: any
+): void {
 
     if (!obj || typeof obj !== "object") {
         throw new Error("Resolution result must be an object.");
@@ -143,10 +192,7 @@ function validateResolutionResult(obj: any): void {
         "update_quantity",
     ]);
 
-    //
-    // ACTION TYPE
-    //
-
+    // Validate resolved action type.
     if (
         typeof action.type !== "string"
     ) {
@@ -155,10 +201,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // TARGET TEXT
-    //
-
+    // Validate optional target text.
     if (
         action.target_text !== undefined &&
         typeof action.target_text !== "string"
@@ -168,10 +211,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // MENU ITEM ID
-    //
-
+    // Validate required menu item references.
     if (
         menuItemRequiredIntents.has(
             String(obj.intent),
@@ -183,10 +223,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // NAME
-    //
-
+    // Validate resolved display name.
     if (
         action.name !== undefined &&
         typeof action.name !== "string"
@@ -196,10 +233,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // QUANTITY
-    //
-
+    // Validate required quantity-bearing actions.
     if (
         quantityRequiredIntents.has(
             String(obj.intent),
@@ -211,10 +245,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // MODIFIERS
-    //
-
+    // Validate modifier payload shape.
     if (
         action.modifiers !== undefined &&
         (
@@ -227,10 +258,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // REFERENCE RESOLUTION
-    //
-
+    // Validate resolved reference metadata.
     if (
         action.reference_resolution !== undefined &&
         action.reference_resolution !== null &&
@@ -244,10 +272,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // QUESTION
-    //
-
+    // Validate clarification question payload.
     if (
         obj.question !== undefined &&
         typeof obj.question !== "string"
@@ -257,10 +282,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // SUGGESTIONS
-    //
-
+    // Validate optional suggestion list.
     if (
         obj.suggestions !== undefined &&
         !Array.isArray(obj.suggestions)
@@ -270,10 +292,7 @@ function validateResolutionResult(obj: any): void {
         );
     }
 
-    //
-    // CONFIDENCE
-    //
-
+    // Validate top-level confidence score.
     if (
         obj.confidence !== undefined &&
         typeof obj.confidence !== "number"

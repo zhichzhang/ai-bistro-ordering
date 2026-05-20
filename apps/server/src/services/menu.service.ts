@@ -4,16 +4,10 @@ import { toCategory, toMenuItem, toModifierGroup, toModifierOption } from "../ma
 import type { Category, MenuItem, ModifierGroup, ModifierOption } from "../types/domain.types";
 import type { MenuMatchResult, PromptMenuCategory, PromptMenuContext, PromptMenuItem } from "../types/menu.types";
 
-type MenuItemModifierGroupRow = {
-    menu_item_id: string;
-    modifier_group_id: string;
-};
+const RESTAURANT_NAME = "Grove & Grill";
 
-const RESTAURANT_NAME = "The Intelligent Bistro";
-
-const PROMPT_ALIASES: Record<string, string[]> = {
-    sandwich: ["burger_beef", "burger_chicken", "burger_veggie"],
-    burger: ["burger_beef", "burger_chicken", "burger_veggie"],
+const STATIC_PROMPT_ALIASES: Record<string, string[]> = {
+    sandwich: ["sandwich_beef", "sandwich_chicken", "sandwich_veggie"],
     "beef sandwich": ["burger_beef"],
     "chicken sandwich": ["burger_chicken"],
     "veggie sandwich": ["burger_veggie"],
@@ -29,6 +23,86 @@ const PROMPT_ALIASES: Record<string, string[]> = {
     "ice cream": ["ice_cream"],
     dessert: ["ice_cream"],
 };
+
+/**
+ * Register a normalized alias mapping for AI lookup.
+ */
+function addAlias(
+    aliases: Record<string, string[]>,
+    alias: string,
+    itemId: string,
+): void {
+
+    const normalizedAlias = normalizeLookupKey(alias);
+
+    if (!normalizedAlias) {
+        return;
+    }
+
+    if (!aliases[normalizedAlias]) {
+        aliases[normalizedAlias] = [];
+    }
+
+    if (!aliases[normalizedAlias].includes(itemId)) {
+        aliases[normalizedAlias].push(itemId);
+    }
+}
+
+/**
+ * Merge curated backend aliases into generated aliases.
+ */
+function mergeAliases(
+    target: Record<string, string[]>,
+    source: Record<string, string[]>,
+): void {
+
+    for (const [alias, itemIds] of Object.entries(source)) {
+
+        const normalizedAlias =
+            normalizeLookupKey(alias);
+
+        if (!target[normalizedAlias]) {
+            target[normalizedAlias] = [];
+        }
+
+        for (const itemId of itemIds) {
+
+            if (!target[normalizedAlias].includes(itemId)) {
+                target[normalizedAlias].push(itemId);
+            }
+        }
+    }
+}
+
+/**
+ * Generate semantic lookup aliases for AI menu resolution.
+ */
+function buildAliases(
+    items: PromptMenuItem[]
+): Record<string, string[]> {
+
+    const aliases: Record<string, string[]> = {};
+
+    for (const item of items) {
+
+        // Full semantic item name.
+        addAlias(aliases, item.name, item.id);
+
+        // Individual semantic tokens.
+        const tokens = normalizeLookupKey(item.name).split(" ");
+
+        for (const token of tokens) {
+
+            if (token.length < 3) {
+                continue;
+            }
+
+            addAlias(aliases, token, item.id);
+        }
+    }
+
+    return aliases;
+}
 
 export class MenuService {
     static async listCategories(): Promise<Category[]> {
@@ -46,8 +120,17 @@ export class MenuService {
         return row ? toMenuItem(row) : null;
     }
 
+    /**
+     * Build prompt-safe menu context for AI ordering flows.
+     */
     static async getPromptMenuContext(): Promise<PromptMenuContext> {
-        const [categoryRows, menuItemRows, modifierGroupRows, modifierOptionRows, menuItemModifierGroupRows] = await Promise.all([
+        const [
+            categoryRows,
+            menuItemRows,
+            modifierGroupRows,
+            modifierOptionRows,
+            menuItemModifierGroupRows,
+        ] = await Promise.all([
             MenuRepository.listCategories(),
             MenuRepository.listMenuItems(),
             MenuRepository.listModifierGroups(),
@@ -66,10 +149,12 @@ export class MenuService {
                 if (a.categoryId !== b.categoryId) {
                     return a.categoryId.localeCompare(b.categoryId);
                 }
+
                 return a.sortOrder - b.sortOrder;
             });
 
         const modifierGroups = modifierGroupRows.map(toModifierGroup);
+
         const modifierOptions = modifierOptionRows.map(toModifierOption);
 
         const modifierGroupById = new Map<string, ModifierGroup>(
@@ -87,12 +172,16 @@ export class MenuService {
             (row) => row.modifier_group_id
         );
 
-        const menuItemsByCategoryId = groupBy(menuItems, (item) => item.categoryId);
+        const menuItemsByCategoryId = groupBy(
+            menuItems,
+            (item) => item.categoryId
+        );
 
         const promptCategories: PromptMenuCategory[] = categories.map((category) => ({
             id: category.id,
             name: category.name,
             sort_order: category.sortOrder,
+
             items: (menuItemsByCategoryId.get(category.id) ?? [])
                 .slice()
                 .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -102,6 +191,7 @@ export class MenuService {
                     category: category.name,
                     price: centsToDollars(item.priceCents),
                     image_url: item.imageUrl,
+
                     modifiers: buildPromptModifiersForItem(
                         item.id,
                         modifierGroupIdsByMenuItemId,
@@ -111,10 +201,22 @@ export class MenuService {
                 })),
         }));
 
+        // Build semantic aliases dynamically from current menu data.
+        const allItems = promptCategories.flatMap((category) => category.items);
+
+        const aliases = buildAliases(allItems);
+
+        mergeAliases(
+            aliases,
+            STATIC_PROMPT_ALIASES
+        );
+
+        console.log(aliases)
+
         return {
             restaurant_name: RESTAURANT_NAME,
             categories: promptCategories,
-            aliases: clone(PROMPT_ALIASES),
+            aliases,
         };
     }
 
@@ -199,11 +301,15 @@ export class MenuService {
 
         const partialNameMatches = items.filter(
             (item: PromptMenuItem) => {
-                const itemName = normalizeLookupKey(item.name);
+
+                const itemName =
+                    normalizeLookupKey(item.name);
+
+                const itemTokens =
+                    itemName.split(" ");
 
                 return (
-                    itemName.includes(normalizedQuery) ||
-                    normalizedQuery.includes(itemName)
+                    itemTokens.includes(normalizedQuery)
                 );
             }
         );
@@ -215,6 +321,7 @@ export class MenuService {
         const normalizedQuery = normalizeLookupKey(query);
         const candidates = await this.findMenuItemCandidates(query);
 
+        // Single candidate should resolve immediately without clarification.
         if (candidates.length === 1) {
             return {
                 query,
@@ -434,8 +541,3 @@ function dedupeById(items: PromptMenuItem[]): PromptMenuItem[] {
 function centsToDollars(value: number): number {
     return Math.round((value / 100) * 100) / 100;
 }
-
-function clone<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value)) as T;
-}
-

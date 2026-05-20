@@ -4,7 +4,11 @@ import type {
     NormalizationResult,
     ResolutionResult,
 } from "./prompt.types";
-import {CartContext, CartContextDto} from "./cart.types";
+
+import {
+    CartContext,
+    CartContextDto,
+} from "./cart.types";
 
 export type OrderingPipelineStatus =
     | "success"
@@ -18,30 +22,19 @@ export type OrderingTurnRequest = {
 
 export type OrderingTurnResponse = {
     sessionId: string;
-
     chatMessageId: string;
-
     cartId: string;
-
     normalization: NormalizationResult;
-
     resolutions: ResolutionResult[];
-
     assistantMessage: string;
-
     cart: CartContext | null;
-
     status: OrderingPipelineStatus;
-
 };
 
 export type OrderingExecutionResult = {
     success: boolean;
-
     appliedActions: number;
-
     clarificationRequired: boolean;
-
     errors: string[];
 };
 
@@ -55,8 +48,8 @@ export type OrderingAssistantResponse = {
     requiresClarification: boolean;
 };
 
+// Internal orchestration pipeline result payload.
 type OrderingPipelineResult = {
-
     status:
         | "success"
         | "partial_failure"
@@ -64,24 +57,15 @@ type OrderingPipelineResult = {
         | "error";
 
     assistantMessage: string;
-
     normalization?: NormalizationResult;
-
     resolutions: ResolutionResult[];
-
     executionErrors: {
         actionIndex: number;
-
         message: string;
-
         errorType: string;
     }[];
-
     cart: CartContextDto;
-
     sessionId: string;
-
     cartId: string;
-
     chatMessageId: string;
 };

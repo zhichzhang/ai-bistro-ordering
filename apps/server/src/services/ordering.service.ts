@@ -1,39 +1,44 @@
+// apps/server/src/services/ordering.service.ts
+
 import { ChatRepository } from "../db/repositories/chat.repository";
 import { CartRepository } from "../db/repositories/cart.repository";
 import { NormalizationService } from "./normalization.service";
 import { ResolutionService } from "./resolution.service";
+
 import type {
     NormalizationResult,
     NormalizedAction,
     ResolutionResult,
 } from "../types/prompt.types";
-import type { ChatMessageActionRow } from "../types/db.types";
-import {CartExecutionService} from "./cart.service";
-import {CartContext, CartExecutionContext} from "../types/cart.types";
-import {MenuService} from "./menu.service";
-import {PromptContextService} from "./prompt-context.service";
+
+import type {
+    ChatMessageActionRow,
+} from "../types/db.types";
+
+import { CartExecutionService } from "./cart.service";
+
+import type {
+    CartContext,
+    CartExecutionContext,
+} from "../types/cart.types";
+
+import { MenuService } from "./menu.service";
+
+import { PromptContextService } from "./prompt-context.service";
 
 export type HandleUserMessageInput = {
     sessionId: string;
     userMessage: string;
 };
 
-
 export type HandleUserMessageResult = {
     sessionId: string;
-
     chatMessageId: string;
-
     cartId: string;
-
     normalization: NormalizationResult;
-
     resolutions: ResolutionResult[];
-
     assistantMessage: string;
-
     cart: CartContext | null;
-
     status:
         | "success"
         | "partial_failure"
@@ -41,22 +46,17 @@ export type HandleUserMessageResult = {
         | "error";
 };
 
+// Build human-readable execution summaries for chained action references.
 function buildExecutionSummary(
     action: {
         type: string;
-
         target_text?: string;
-
         quantity?: number;
-
         name?: string;
     }
 ): string {
-
     switch (action.type) {
-
         case "add_item":
-
             return `Added ${
                 action.quantity ?? 1
             } ${
@@ -66,21 +66,18 @@ function buildExecutionSummary(
             }`;
 
         case "modify_item":
-
             return `Modified ${
                 action.target_text ??
                 "item"
             } modifiers`;
 
         case "remove_item":
-
             return `Removed ${
                 action.target_text ??
                 "item"
             }`;
 
         case "update_quantity":
-
             return `Updated quantity of ${
                 action.target_text ??
                 "item"
@@ -89,30 +86,31 @@ function buildExecutionSummary(
             }`;
 
         case "clear_cart":
-
             return "Cleared cart";
 
         case "view_cart":
-
             return "Viewed cart";
 
         default:
-
             return action.type;
     }
 }
 
 export class OrderingService {
+
     constructor(
         private readonly normalizationService: NormalizationService,
         private readonly resolutionService: ResolutionService,
         private readonly cartExecutionService: CartExecutionService,
     ) {}
 
+    // Execute the full ordering pipeline for a user message.
     async handleUserMessage(
         input: HandleUserMessageInput
     ): Promise<HandleUserMessageResult> {
-        const chatSession = await ChatRepository.getChatSessionById(input.sessionId);
+        const chatSession =
+            await ChatRepository.getChatSessionById(input.sessionId);
+
         if (!chatSession) {
             throw new Error(`Chat session not found: ${input.sessionId}`);
         }
@@ -121,19 +119,59 @@ export class OrderingService {
             throw new Error(`Cart not initialized for chat session: ${input.sessionId}`);
         }
 
-        const cart = await CartRepository.getCartById(chatSession.cart_id);
+        const cart =
+            await CartRepository.getCartById(chatSession.cart_id);
+
         if (!cart) {
             throw new Error(`Cart not found: ${chatSession.cart_id}`);
         }
 
-        const currentCartContext = await this.buildCurrentCartContext(cart.id);
-        const menuContext = await MenuService.getPromptMenuContext();
+        const currentCartContext =
+            await this.buildCurrentCartContext(cart.id);
+
+        const menuContext =
+            await MenuService.getPromptMenuContext();
 
         if (!currentCartContext) {
             throw new Error(`Cart not found: ${cart.id}`);
         }
 
-        const recentActionContext = await this.buildRecentActionContext(chatSession.id);
+        const recentActionContext =
+            await this.buildRecentActionContext(chatSession.id);
+
+        // Resolve lightweight clarification replies before normalization.
+        const normalizedUserMessage =
+            input.userMessage
+                .trim()
+                .toLowerCase();
+
+        const recentAssistantMessage =
+            await ChatRepository.getLatestAssistantMessage(
+                chatSession.id
+            );
+
+        if (
+            recentAssistantMessage?.content.includes(
+                "Which sandwich would you like"
+            )
+        ) {
+
+            const clarificationCandidates =
+                await MenuService.findMenuItemCandidates(
+                    normalizedUserMessage
+                );
+
+            if (
+                clarificationCandidates.length === 1
+            ) {
+
+                input.userMessage =
+                    `Add ${
+                        clarificationCandidates[0].name
+                    }`;
+            }
+        }
+
 
         const normalization =
             await this.normalizationService.normalizeMessage({
@@ -150,23 +188,29 @@ export class OrderingService {
                             recentActionContext
                         ),
 
+                // availableModifierContext:
+                //     PromptContextService.serializeModifierContext(
+                //         menuContext
+                //     ),
+
                 userMessage:
                 input.userMessage,
             });
 
-        const userMessageRow = await ChatRepository.createChatMessage({
-            chatSessionId: chatSession.id,
-            role: "user",
-            content: input.userMessage,
-            parsedAction: normalization as Record<string, unknown>,
-            errorType: null,
-        });
+
+        const userMessageRow =
+            await ChatRepository.createChatMessage({
+                chatSessionId: chatSession.id,
+                role: "user",
+                content: input.userMessage,
+                parsedAction: normalization as Record<string, unknown>,
+                errorType: null,
+            });
 
         if (
             normalization.status ===
             "needs_clarification"
         ) {
-
             return {
                 status:
                     "needs_clarification",
@@ -195,30 +239,33 @@ export class OrderingService {
             };
         }
 
-        const actionRows = await this.persistNormalizedActions({
-            chatMessageId: userMessageRow.id,
-            cartId: cart.id,
-            normalization,
-        });
+        const actionRows =
+            await this.persistNormalizedActions({
+                chatMessageId: userMessageRow.id,
+                cartId: cart.id,
+                normalization,
+            });
 
         const resolutions: ResolutionResult[] = [];
+
         const executionErrors: {
             actionIndex: number;
-
             message: string;
-
             errorType: string;
         }[] = [];
 
-        let mutableCurrentCartContext: CartContext = currentCartContext;
+        let mutableCurrentCartContext: CartContext =
+            currentCartContext;
 
         for (const actionRow of actionRows) {
-            const normalizedAction = actionRow.normalized_action as NormalizedAction;
+            const normalizedAction =
+                actionRow.normalized_action as NormalizedAction;
 
-            const executionContext = await this.buildExecutionContext(
-                userMessageRow.id,
-                normalizedAction.index
-            );
+            const executionContext =
+                await this.buildExecutionContext(
+                    userMessageRow.id,
+                    normalizedAction.index
+                );
 
             const resolution =
                 await this.resolutionService.resolveAction({
@@ -245,7 +292,6 @@ export class OrderingService {
                 resolution.status ===
                 "needs_clarification"
             ) {
-
                 const finalCart =
                     await this
                         .buildCurrentCartContext(
@@ -278,47 +324,31 @@ export class OrderingService {
                 };
             }
 
-            const updatedRow = await ChatRepository.updateChatMessageAction(
-                actionRow.id,
-                this.mapResolutionToActionPatch(resolution)
-            );
+            const updatedRow =
+                await ChatRepository.updateChatMessageAction(
+                    actionRow.id,
+                    this.mapResolutionToActionPatch(resolution)
+                );
 
             if (resolution.status === "success") {
                 try {
+                    await this
+                        .cartExecutionService
+                        .executeResolvedAction({
 
-                    const executionResult =
-                        await this
-                            .cartExecutionService
-                            .executeResolvedAction({
+                            cartId:
+                            cart.id,
 
-                                cartId:
-                                cart.id,
+                            chatMessageActionId:
+                            updatedRow.id,
 
-                                chatMessageActionId:
-                                updatedRow.id,
+                            resolution,
 
-                                resolution,
-
-                                executionContext,
-                            });
-
-                    // executionContext
-                    //     .previousActions
-                    //     .push({
-                    //
-                    //         action_index:
-                    //         normalizedAction.index,
-                    //
-                    //         resolved_cart_item_id:
-                    //             executionResult
-                    //                 .resolvedCartItemId ??
-                    //             null,
-                    //     });
+                            executionContext,
+                        });
 
                 } catch (error) {
-
                     executionErrors.push({
-
                         actionIndex:
                         normalizedAction.index,
 
@@ -332,7 +362,9 @@ export class OrderingService {
                     });
                 }
 
-                const refreshed = await this.buildCurrentCartContext(cart.id);
+                const refreshed =
+                    await this.buildCurrentCartContext(cart.id);
+
                 if (refreshed) {
                     mutableCurrentCartContext = refreshed;
                 }
@@ -349,7 +381,10 @@ export class OrderingService {
             chatSessionId: chatSession.id,
             role: "assistant",
             content: assistantMessageContent,
-            parsedAction: { normalization, resolutions } as Record<string, unknown>,
+            parsedAction: {
+                normalization,
+                resolutions,
+            } as Record<string, unknown>,
             errorType: null,
         });
 
@@ -388,19 +423,26 @@ export class OrderingService {
         };
     }
 
+    // Build the current hydrated cart context with modifiers.
     private async buildCurrentCartContext(
         cartId: string
     ): Promise<CartContext | null> {
-        const cart = await CartRepository.getCartById(cartId);
+        const cart =
+            await CartRepository.getCartById(cartId);
+
         if (!cart) {
             return null;
         }
 
-        const items = await CartRepository.listCartItems(cartId);
+        const items =
+            await CartRepository.listCartItems(cartId);
+
         const itemsWithModifiers = [];
 
         for (const item of items) {
-            const modifiers = await CartRepository.listCartItemModifiers(item.id);
+            const modifiers =
+                await CartRepository.listCartItemModifiers(item.id);
+
             itemsWithModifiers.push({
                 ...item,
                 modifiers,
@@ -413,6 +455,7 @@ export class OrderingService {
         };
     }
 
+    // Load recent actions for prompt grounding.
     private async buildRecentActionContext(
         chatSessionId: string
     ): Promise<ChatMessageActionRow[]> {
@@ -425,18 +468,23 @@ export class OrderingService {
         return actions.slice(-5);
     }
 
+    // Build execution memory for chained action resolution.
     private async buildExecutionContext(
         userMessageId: string,
         currentActionIndex: number
     ): Promise<CartExecutionContext> {
-        const actions = await ChatRepository.listActionsByMessageId(userMessageId);
+        const actions =
+            await ChatRepository.listActionsByMessageId(userMessageId);
 
         return {
             previousActions: actions
-                .filter((action) => action.action_index < currentActionIndex)
-                .sort((a, b) => a.action_index - b.action_index)
+                .filter((action) =>
+                    action.action_index < currentActionIndex
+                )
+                .sort((a, b) =>
+                    a.action_index - b.action_index
+                )
                 .map((action) => ({
-
                     action_index:
                     action.action_index,
 
@@ -445,10 +493,6 @@ export class OrderingService {
 
                     referenced_cart_item_id:
                     action.reference_cart_item_id,
-
-                    //
-                    // semantic execution memory
-                    //
 
                     action_type:
                     action.action_type,
@@ -485,6 +529,7 @@ export class OrderingService {
         };
     }
 
+    // Persist normalized actions before resolution/execution.
     private async persistNormalizedActions(input: {
         chatMessageId: string;
         cartId: string | null;
@@ -493,56 +538,57 @@ export class OrderingService {
         const rows: ChatMessageActionRow[] = [];
 
         for (const action of input.normalization.actions) {
-            const row = await ChatRepository.createChatMessageAction({
-                chatMessageId: input.chatMessageId,
-                cartId: input.cartId,
-                actionIndex: action.index,
-                actionType: action.type,
-                intent: input.normalization.intent,
-                status:
-                    input.normalization.status === "success"
-                        ? "pending"
-                        : input.normalization.status,
-                normalizedAction: action as Record<string, unknown>,
-                resolvedAction: null,
-                question: input.normalization.question ?? null,
-                message: input.normalization.message ?? null,
-                errorType:
-                    input.normalization.status === "needs_clarification"
-                        ? "clarification_required"
-                        : null,
-                errorMessage: null,
-                confidence: input.normalization.confidence,
-                dependsOn:
-                action.depends_on,
+            const row =
+                await ChatRepository.createChatMessageAction({
+                    chatMessageId: input.chatMessageId,
+                    cartId: input.cartId,
+                    actionIndex: action.index,
+                    actionType: action.type,
+                    intent: input.normalization.intent,
+                    status:
+                        input.normalization.status === "success"
+                            ? "pending"
+                            : input.normalization.status,
+                    normalizedAction: action as Record<string, unknown>,
+                    resolvedAction: null,
+                    question: input.normalization.question ?? null,
+                    message: input.normalization.message ?? null,
+                    errorType:
+                        input.normalization.status === "needs_clarification"
+                            ? "clarification_required"
+                            : null,
+                    errorMessage: null,
+                    confidence: input.normalization.confidence,
+                    dependsOn:
+                    action.depends_on,
 
-                referenceType:
-                    action.reference?.type ?? null,
+                    referenceType:
+                        action.reference?.type ?? null,
 
-                referenceActionIndex:
-                    action.reference?.action_index ?? null,
+                    referenceActionIndex:
+                        action.reference?.action_index ?? null,
 
-                referenceCartItemId:
-                    action.reference?.cart_item_id ?? null,
+                    referenceCartItemId:
+                        action.reference?.cart_item_id ?? null,
 
-                referenceCartPosition:
-                    action.reference?.position ?? null,
+                    referenceCartPosition:
+                        action.reference?.position ?? null,
 
-                referenceText:
-                    action.reference?.text ?? null,
+                    referenceText:
+                        action.reference?.text ?? null,
 
-                resolvedMenuItemId:
-                    null,
+                    resolvedMenuItemId:
+                        null,
 
-                resolvedCartItemId:
-                    null,
+                    resolvedCartItemId:
+                        null,
 
-                executionOrder:
-                action.index,
+                    executionOrder:
+                    action.index,
 
-                executedAt:
-                    null,
-            });
+                    executedAt:
+                        null,
+                });
 
             rows.push(row);
         }
@@ -550,12 +596,14 @@ export class OrderingService {
         return rows;
     }
 
+    // Map resolution output into persisted action state.
     private mapResolutionToActionPatch(
         resolution: ResolutionResult
     ): Partial<ChatMessageActionRow> {
         return {
             status: resolution.status,
-            resolved_action: resolution.action as unknown as Record<string, unknown>,
+            resolved_action:
+                resolution.action as unknown as Record<string, unknown>,
             question: resolution.question ?? null,
             message: resolution.message ?? null,
             error_type: resolution.error_type ?? null,
@@ -564,23 +612,7 @@ export class OrderingService {
         };
     }
 
-    // private buildAssistantMessage(resolutions: ResolutionResult[]): string {
-    //     const successCount = resolutions.filter((r) => r.status === "success").length;
-    //     const clarificationCount = resolutions.filter((r) => r.status === "needs_clarification").length;
-    //     const errorCount = resolutions.filter((r) => r.status === "error").length;
-    //
-    //     return JSON.stringify(
-    //         {
-    //             successCount,
-    //             clarificationCount,
-    //             errorCount,
-    //             resolutions,
-    //         },
-    //         null,
-    //         2
-    //     );
-    // }
-
+    // Build user-facing assistant response text.
     private buildAssistantMessage(
         resolutions: ResolutionResult[],
         executionErrors: {
@@ -589,11 +621,9 @@ export class OrderingService {
             errorType: string;
         }[]
     ): string {
-
         if (
             executionErrors.length > 0
         ) {
-
             return executionErrors[0]
                 .message;
         }
@@ -607,19 +637,15 @@ export class OrderingService {
         if (
             successful.length === 0
         ) {
-
             return "Unable to process request.";
         }
 
         return successful
             .map((r) => {
-
                 switch (
                     r.action.type
                     ) {
-
                     case "add_item":
-
                         return `Added ${
                             r.action.quantity
                         } ${
@@ -627,29 +653,24 @@ export class OrderingService {
                         }`;
 
                     case "modify_item":
-
                         return `Updated ${
                             r.action.name
                         }`;
 
                     case "remove_item":
-
                         return `Removed ${
                             r.action.name
                         }`;
 
                     case "update_quantity":
-
                         return `Updated quantity for ${
                             r.action.name
                         }`;
 
                     case "clear_cart":
-
                         return "Cleared cart";
 
                     default:
-
                         return "Done";
                 }
             })

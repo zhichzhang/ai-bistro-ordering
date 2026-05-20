@@ -1,6 +1,11 @@
+// apps/server/src/services/normalization.service.ts
+
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import type { NormalizationResult } from "../types/prompt.types";
+
+import type {
+    NormalizationResult,
+} from "../types/prompt.types";
 
 export interface TextGenerationClient {
     generate(prompt: string): Promise<string>;
@@ -9,16 +14,24 @@ export interface TextGenerationClient {
 export type NormalizeMessageInput = {
     currentCartContext: string;
     recentActionContext: string;
+    // availableModifierContext: string;
     userMessage: string;
 };
 
 export class NormalizationService {
+
     private static promptTemplatePromise: Promise<string> | null = null;
 
-    constructor(private readonly llm: TextGenerationClient) {}
+    constructor(
+        private readonly llm: TextGenerationClient
+    ) {}
 
-    async normalizeMessage(input: NormalizeMessageInput): Promise<NormalizationResult> {
-        const promptTemplate = await NormalizationService.loadPromptTemplate();
+    // Normalize raw user input into structured ordering actions.
+    async normalizeMessage(
+        input: NormalizeMessageInput
+    ): Promise<NormalizationResult> {
+        const promptTemplate =
+            await NormalizationService.loadPromptTemplate();
 
         const prompt = promptTemplate
             .replace(
@@ -29,30 +42,49 @@ export class NormalizationService {
                 "{{RECENT_ACTION_CONTEXT}}",
                 input.recentActionContext
             )
-            .replace("{{USER_MESSAGE}}", input.userMessage);
+            // .replace(
+            //     "{{AVAILABLE_MODIFIER_CONTEXT}}",
+            //     input.availableModifierContext
+            // )
+            .replace(
+                "{{USER_MESSAGE}}",
+                input.userMessage
+            );
 
-        const raw = await this.llm.generate(prompt);
-        const parsed = parseJsonFromModelOutput(raw);
+        const raw =
+            await this.llm.generate(prompt);
+
+        const parsed =
+            parseJsonFromModelOutput(raw);
 
         validateNormalizationResult(parsed);
 
         return parsed as NormalizationResult;
     }
 
+    // Load and cache the normalization prompt template.
     private static async loadPromptTemplate(): Promise<string> {
         if (!this.promptTemplatePromise) {
             this.promptTemplatePromise = readPromptFile([
-                path.resolve(process.cwd(), "src/prompts/action-normalization-lite.txt"),
-                path.resolve(process.cwd(), "apps/server/src/prompts/action-normalization-lite.txt"),
+                path.resolve(
+                    process.cwd(),
+                    "src/prompts/action-normalization-lite.txt"
+                ),
+                path.resolve(
+                    process.cwd(),
+                    "apps/server/src/prompts/action-normalization-lite.txt"
+                ),
             ]);
-
         }
 
         return this.promptTemplatePromise;
     }
 }
 
-async function readPromptFile(candidates: string[]): Promise<string> {
+// Load the first available prompt file candidate.
+async function readPromptFile(
+    candidates: string[]
+): Promise<string> {
     let lastError: unknown = null;
 
     for (const filePath of candidates) {
@@ -68,28 +100,48 @@ async function readPromptFile(candidates: string[]): Promise<string> {
     );
 }
 
-function parseJsonFromModelOutput(raw: string): unknown {
-    const trimmed = raw.trim();
+// Extract structured JSON from model output.
+function parseJsonFromModelOutput(
+    raw: string
+): unknown {
+    const trimmed =
+        raw.trim();
 
-    const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    const fenced =
+        trimmed.match(
+            /^```(?:json)?\s*([\s\S]*?)\s*```$/i
+        );
+
     if (fenced?.[1]) {
         return JSON.parse(fenced[1]);
     }
 
-    const firstBrace = trimmed.indexOf("{");
-    const lastBrace = trimmed.lastIndexOf("}");
+    const firstBrace =
+        trimmed.indexOf("{");
 
-    if (firstBrace >= 0 && lastBrace >= firstBrace) {
-        const candidate = trimmed.slice(firstBrace, lastBrace + 1);
+    const lastBrace =
+        trimmed.lastIndexOf("}");
+
+    if (
+        firstBrace >= 0 &&
+        lastBrace >= firstBrace
+    ) {
+        const candidate =
+            trimmed.slice(
+                firstBrace,
+                lastBrace + 1
+            );
+
         return JSON.parse(candidate);
     }
 
     return JSON.parse(trimmed);
 }
 
-// apps/server/src/services/normalization.service.ts
-
-function validateNormalizationResult(obj: any): void {
+// Validate normalization payload shape before execution.
+function validateNormalizationResult(
+    obj: any
+): void {
 
     if (!obj || typeof obj !== "object") {
         throw new Error("Normalization result must be an object.");
@@ -99,12 +151,6 @@ function validateNormalizationResult(obj: any): void {
         throw new Error("Normalization result missing actions.");
     }
 
-    // const quantityRequiredTypes = new Set([
-    //     "add_item",
-    //     "remove_item",
-    //     "update_quantity",
-    //     "modify_item",
-    // ]);
     const quantityRequiredTypes = new Set([
         "add_item",
         "update_quantity",
@@ -116,18 +162,12 @@ function validateNormalizationResult(obj: any): void {
             throw new Error("Normalization action invalid.");
         }
 
-        //
-        // TYPE
-        //
-
+        // Validate normalized action type.
         if (typeof a.type !== "string") {
             throw new Error("Normalization action missing type.");
         }
 
-        //
-        // TARGET TEXT
-        //
-
+        // Validate optional target text.
         if (
             a.target_text !== undefined &&
             typeof a.target_text !== "string"
@@ -137,12 +177,11 @@ function validateNormalizationResult(obj: any): void {
             );
         }
 
-        //
-        // QUANTITY
-        //
-
+        // Validate required quantity-bearing actions.
         if (
-            quantityRequiredTypes.has(String(a.type)) &&
+            quantityRequiredTypes.has(
+                String(a.type)
+            ) &&
             typeof a.quantity !== "number"
         ) {
             throw new Error(
@@ -150,10 +189,7 @@ function validateNormalizationResult(obj: any): void {
             );
         }
 
-        //
-        // MODIFIERS
-        //
-
+        // Validate modifier payload shape.
         if (
             a.modifiers !== undefined &&
             (
@@ -166,10 +202,7 @@ function validateNormalizationResult(obj: any): void {
             );
         }
 
-        //
-        // REFERENCE
-        //
-
+        // Validate reference metadata shape.
         if (
             a.reference !== undefined &&
             a.reference !== null &&
@@ -183,10 +216,7 @@ function validateNormalizationResult(obj: any): void {
             );
         }
 
-        //
-        // DEPENDS ON
-        //
-
+        // Validate dependency graph structure.
         if (
             a.depends_on !== undefined &&
             !Array.isArray(a.depends_on)
@@ -196,10 +226,7 @@ function validateNormalizationResult(obj: any): void {
             );
         }
 
-        //
-        // RAW TEXT
-        //
-
+        // Validate raw source text preservation.
         if (
             a.raw_text !== undefined &&
             typeof a.raw_text !== "string"
@@ -210,10 +237,7 @@ function validateNormalizationResult(obj: any): void {
         }
     }
 
-    //
-    // CONFIDENCE
-    //
-
+    // Validate top-level confidence score.
     if (
         obj.confidence !== undefined &&
         typeof obj.confidence !== "number"
