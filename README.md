@@ -97,23 +97,22 @@ The architecture is separated into:
 
 ## Backend
 
-* TypeScript
-* Node.js
-* Express
-* Supabase
-* PostgreSQL
-* Google Gemini API
-* Vitest
-* TSX
-* Supertest
+<p align="left">
+  <img src="https://skillicons.dev/icons?i=ts,nodejs,express,postgres,supabase,vitest" />
+</p>
+
+![Google Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![Supertest](https://img.shields.io/badge/Supertest-000000?style=for-the-badge)
 
 ## Mobile
 
-* React Native
-* Expo
-* Expo Go
-* TypeScript
-* Zustand
+<p align="left">
+  <img src="https://skillicons.dev/icons?i=react,ts" />
+</p>
+
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-443E38?style=for-the-badge)
 
 
 
