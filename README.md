@@ -14,7 +14,7 @@ The project focuses heavily on:
 * Stable cart state management
 * AI-assisted conversational ordering
 
----
+
 
 # Highlights
 
@@ -30,7 +30,7 @@ The backend separates the AI workflow into multiple execution stages:
 
 This avoids allowing the LLM to directly control database mutations.
 
----
+
 
 ## Prompt Context Transformation Layer
 
@@ -46,7 +46,7 @@ This includes:
 
 The goal is to improve reasoning consistency and reduce ambiguity during AI ordering execution.
 
----
+
 
 ## Deterministic Cart Execution
 
@@ -61,7 +61,7 @@ The execution layer handles:
 * Modifier synchronization
 * Stateful cart updates
 
----
+
 
 ## Adapter-Oriented Menu Resolution
 
@@ -75,7 +75,7 @@ This includes:
 * Structured menu lookup
 * Resolution confidence handling
 
----
+
 
 ## Typed Full-Stack Architecture
 
@@ -91,7 +91,7 @@ The architecture is separated into:
 * Domain types
 * DTO contracts
 
----
+
 
 # Tech Stack
 
@@ -115,7 +115,7 @@ The architecture is separated into:
 * TypeScript
 * Zustand
 
----
+
 
 # Project Structure
 
@@ -308,7 +308,7 @@ npm run android
 npm run web
 ```
 
----
+
 
 # Backend Structure
 
@@ -330,7 +330,7 @@ apps/server/src/routes/
 | `ordering.routes.ts` | AI ordering orchestration pipeline        |
 | `health.routes.ts`   | Health check endpoints                    |
 
----
+
 
 ## Service Layer
 
