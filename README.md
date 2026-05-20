@@ -125,7 +125,7 @@ apps/
 └── server/     # Express + AI orchestration backend
 ```
 
----
+
 
 # Environment Setup
 
@@ -146,7 +146,7 @@ SUPABASE_KEY=
 GEMINI_MODEL=
 ```
 
----
+
 
 ## Mobile Environment
 
@@ -162,7 +162,7 @@ Required variables:
 EXPO_PUBLIC_API_BASE_URL=http://{IP}:{PORT}/api
 ```
 
----
+
 
 # Database Setup
 
@@ -187,7 +187,7 @@ This creates all required database tables for:
 * Conversational ordering workflows
 * Structured AI execution tracking
 
----
+
 
 # Backend Setup
 
@@ -198,7 +198,7 @@ cd apps/server
 npm install
 ```
 
----
+
 
 ## 2. Configure Environment Variables
 
@@ -210,7 +210,7 @@ apps/server/.env
 
 Then populate all required variables.
 
----
+
 
 ## 3. Run Database Schema
 
@@ -222,7 +222,7 @@ Execute:
 
 inside the Supabase SQL Editor.
 
----
+
 
 ## 4. Ingest Menu Data
 
@@ -243,7 +243,7 @@ apps/server/src/scripts/ingestion.script.ts
 
 The ingestion pipeline imports menu data into PostgreSQL.
 
----
+
 
 ## 5. Start Backend Server
 
@@ -254,7 +254,7 @@ npm run dev
 
 The Express server will start in watch mode.
 
----
+
 
 # Mobile Setup
 
@@ -265,7 +265,7 @@ cd apps/mobile
 npm install
 ```
 
----
+
 
 ## 2. Configure Environment Variables
 
@@ -281,7 +281,7 @@ Example:
 EXPO_PUBLIC_API_BASE_URL=http://{IP}:{PORT}/api
 ```
 
----
+
 
 ## 3. Start Expo
 
@@ -323,7 +323,7 @@ apps/server/src/routes/
 ### Available APIs
 
 | Route                | Responsibility                            |
-| -------------------- | ----------------------------------------- |
+| ----------------- | ----------------------------------------- |
 | `cart.routes.ts`     | Cart CRUD and cart state synchronization  |
 | `chat.routes.ts`     | Chat session and conversational messaging |
 | `menu.routes.ts`     | Menu and category retrieval               |
@@ -353,7 +353,7 @@ apps/server/src/services/
 | `chat.service.ts`           | Chat session persistence and history management             |
 | `gemini.service.ts`         | Google Gemini API integration                               |
 
----
+
 
 ## Prompt Layer
 
@@ -370,7 +370,7 @@ Contains structured prompts for:
 * Conversational ordering
 * Resolution flows
 
----
+
 
 ## Database Layer
 
@@ -386,7 +386,7 @@ Responsible for:
 * Repository abstraction
 * PostgreSQL persistence
 
----
+
 
 # Mobile Structure
 
@@ -409,7 +409,7 @@ apps/mobile/src/components/
 | `menu-item-card.component.tsx`   | Menu item presentation           |
 | `quantity-stepper.component.tsx` | Quantity adjustment controls     |
 
----
+
 
 ## Overlays
 
@@ -425,7 +425,7 @@ apps/mobile/src/overlays/
 | `modifier-sheet.overlay.tsx` | Modifier selection workflow |
 | `toast-host.overlay.tsx`     | Global toast notifications  |
 
----
+
 
 ## Frontend Services
 
@@ -443,7 +443,7 @@ apps/mobile/src/services/
 | `chat.service.ts`     | Conversational messaging |
 | `ordering.service.ts` | AI ordering requests     |
 
----
+
 
 ## Frontend State Management
 
@@ -454,7 +454,7 @@ The mobile application uses Zustand for:
 * Chat state
 * UI synchronization
 
----
+
 
 # AI Ordering Flow
 
@@ -463,7 +463,7 @@ The mobile application uses Zustand for:
 * User sends a natural language ordering request
 * Example: `"Add two cheeseburgers with no onions"`
 
----
+
 
 ## Step 2 — Prompt Context Generation
 
@@ -477,7 +477,7 @@ This includes:
 * Execution history formatting
 * Conversational context shaping
 
----
+
 
 ## Step 3 — Action Normalization
 
@@ -494,25 +494,25 @@ Example:
 }
 ```
 
----
+
 
 ## Step 4 — Menu Resolution
 
 The backend resolves menu entities and validates modifiers.
 
----
+
 
 ## Step 5 — Deterministic Execution
 
 The backend executes cart mutations using structured cart services.
 
----
+
 
 ## Step 6 — Cart Synchronization
 
 The updated cart state is returned to the mobile client.
 
----
+
 
 # Testing
 
@@ -535,7 +535,6 @@ Some existing tests are currently outdated.
 
 For new features or architecture changes, it is recommended to write additional tests as needed.
 
----
 
 # Notes
 
