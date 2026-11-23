@@ -11,6 +11,8 @@ import { OpenAIService } from "./services/openai.service";
 import { NormalizationService } from "./services/normalization.service";
 import { OrderingService } from "./services/ordering.service";
 import { ResolutionService } from "./services/resolution.service";
+import { BenchmarkMockLLMService } from "./services/benchmark-mock-llm.service";
+import { createBenchmarkMockRouter } from "./routes/benchmark-mock.routes";
 
 dotenv.config();
 
@@ -41,12 +43,24 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 const provider = process.env.LLM_PROVIDER ?? "openai";
-if (provider !== "openai" && provider !== "gemini") {
+const benchmarkEnabled = provider === "mock";
+if (!["openai", "gemini", "mock"].includes(provider)) {
     throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
 }
-const llm = provider === "openai"
-    ? OpenAIService.createFromEnv()
-    : GeminiService.createFromEnv();
+if (benchmarkEnabled) {
+    const url = new URL(process.env.DATABASE_URL ?? "");
+    if (process.env.NODE_ENV === "production" ||
+        process.env.BENCHMARK_MODE !== "true" ||
+        !["127.0.0.1", "localhost"].includes(url.hostname) ||
+        url.port !== "5433" || url.pathname !== "/ai_bistro_benchmark" ||
+        !process.env.BENCHMARK_TOKEN || process.env.BENCHMARK_TOKEN.length < 16) {
+        throw new Error("Mock LLM requires local benchmark DB, BENCHMARK_MODE=true and BENCHMARK_TOKEN");
+    }
+}
+const mockLLM = benchmarkEnabled ? new BenchmarkMockLLMService() : null;
+const llm = mockLLM ?? (provider === "gemini"
+    ? GeminiService.createFromEnv()
+    : OpenAIService.createFromEnv());
 
 /**
  * Shared text generation pipeline used across orchestration stages.
@@ -76,6 +90,16 @@ app.use("/api", createApiRouter({
     orderingService,
 }));
 
-app.listen(3000, () => {
-    console.log("Server running on port 3000");
-});
+if (mockLLM) {
+    app.use("/api/__benchmark/mock", createBenchmarkMockRouter(mockLLM));
+}
+
+if (benchmarkEnabled) {
+    app.listen(3000, "127.0.0.1", () => {
+        console.log("Local benchmark server running on 127.0.0.1:3000");
+    });
+} else {
+    app.listen(3000, () => {
+        console.log("Server running on port 3000");
+    });
+}

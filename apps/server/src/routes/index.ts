@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { CartNotActiveError, EmptyCartCheckoutError } from "../errors/cart.errors";
 
 import { createCartRouter } from "./cart.routes";
 import { createChatRouter } from "./chat.routes";
@@ -29,6 +30,16 @@ export function createApiRouter(deps: {
     router.use("/chat", createChatRouter(deps.chatService));
 
     router.use("/ordering", createOrderingRouter(deps.orderingService));
+
+    router.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+        if (error instanceof CartNotActiveError || error instanceof EmptyCartCheckoutError) {
+            res.status(error.status).json({
+                error: { code: error.code, message: error.message },
+            });
+            return;
+        }
+        next(error);
+    });
 
     return router;
 }

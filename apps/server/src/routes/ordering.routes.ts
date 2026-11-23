@@ -1,6 +1,7 @@
 // apps/server/src/routes/ordering.routes.ts
 
 import { Router } from "express";
+import { performance } from "node:perf_hooks";
 
 import { OrderingService }
     from "../services/ordering.service";
@@ -14,11 +15,16 @@ export function createOrderingRouter(
     orderingService: OrderingService,
 ): Router {
     const router = Router();
+    // Single-process guard: each session may have only one active AI turn.
+    // The Set is scoped to this router instance; it is not a distributed lock.
+    const inFlightSessions = new Set<string>();
 
     router.post(
         "/sessions/:sessionId/turn",
         async (req, res, next) => {
-            console.time("http-ordering-request");
+            const startedAt = performance.now();
+            let acquired = false;
+            const sessionId = req.params.sessionId;
 
             try {
                 const body =
@@ -44,6 +50,20 @@ export function createOrderingRouter(
                     });
                     return;
                 }
+
+                // Acquire synchronously before any await to prevent overlapping
+                // requests from reading the same stale cart/chat context.
+                if (inFlightSessions.has(sessionId)) {
+                    res.status(409).json({
+                        error: {
+                            code: "TURN_IN_PROGRESS",
+                            message: "An AI turn is already processing for this session.",
+                        },
+                    });
+                    return;
+                }
+                inFlightSessions.add(sessionId);
+                acquired = true;
 
                 const result =
                     await orderingService.handleUserMessage({
@@ -87,7 +107,9 @@ export function createOrderingRouter(
             } catch (error) {
                 next(error);
             } finally {
-                console.timeEnd("http-ordering-request");
+                if (acquired) inFlightSessions.delete(sessionId);
+                const elapsedMs = performance.now() - startedAt;
+                console.log(`http-ordering-request: ${elapsedMs.toFixed(3)}ms`);
             }
         },
     );

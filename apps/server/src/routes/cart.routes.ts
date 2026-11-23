@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { CartNotActiveError, EmptyCartCheckoutError } from "../errors/cart.errors";
 
 import { CartService } from "../services/cart.service";
 
@@ -286,6 +287,14 @@ export function createCartRouter(
         } catch (error) {
             next(error);
         }
+    });
+
+    router.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+        if (error instanceof CartNotActiveError || error instanceof EmptyCartCheckoutError) {
+            res.status(error.status).json({ error: { code: error.code, message: error.message } });
+            return;
+        }
+        next(error);
     });
 
     return router;

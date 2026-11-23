@@ -163,6 +163,7 @@ describe("CartService", () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         vi.clearAllMocks();
+        vi.mocked(CartRepository.getCartById).mockResolvedValue(cartRow);
         (CartService as any).menuItemCache.clear();
         (CartService as any).modifierGroupsCache = null;
         (CartService as any).modifierOptionsCache = null;
@@ -535,4 +536,33 @@ describe("CartService", () => {
         expect(CartRepository.createCartItem).not.toHaveBeenCalled();
         expect(ChatRepository.updateChatMessageAction).not.toHaveBeenCalled();
     });
+
+
+    it("rejects checkout of an empty active cart without writing", async () => {
+        vi.spyOn(service, "getCartContext").mockResolvedValue({ cart: cartRow, items: [] } as any);
+        await expect(service.checkoutCart(cartId)).rejects.toMatchObject({
+            code: "EMPTY_CART", status: 400,
+        });
+        expect(CartRepository.bumpCartRevision).not.toHaveBeenCalled();
+        expect(CartRepository.createCart).not.toHaveBeenCalled();
+    });
+
+    it("rejects checkout of a submitted cart before any write", async () => {
+        vi.mocked(CartRepository.getCartById).mockResolvedValue({ ...cartRow, status: "submitted" });
+        await expect(service.checkoutCart(cartId)).rejects.toMatchObject({
+            code: "CART_NOT_ACTIVE", status: 409,
+        });
+        expect(CartRepository.createCart).not.toHaveBeenCalled();
+        expect(CartRepository.bumpCartRevision).not.toHaveBeenCalled();
+    });
+
+    it("rejects cart mutations once the cart has been submitted", async () => {
+        vi.mocked(CartRepository.getCartById).mockResolvedValue({ ...cartRow, status: "submitted" });
+        await expect(service.addItem(cartId, { menuItemId: "burger_beef", quantity: 1, modifiers: {} }))
+            .rejects.toMatchObject({ code: "CART_NOT_ACTIVE" });
+        await expect(service.clearCart(cartId)).rejects.toMatchObject({ code: "CART_NOT_ACTIVE" });
+        expect(CartRepository.createCartItem).not.toHaveBeenCalled();
+        expect(CartRepository.clearCartItems).not.toHaveBeenCalled();
+    });
+
 });

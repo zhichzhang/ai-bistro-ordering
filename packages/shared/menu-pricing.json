@@ -1,0 +1,77 @@
+{
+  "surcharges": {
+    "sandwich_beef": {
+      "size": {
+        "double": 350
+      },
+      "cheese": {
+        "yes": 75
+      },
+      "add_on": {
+        "bacon": 125
+      }
+    },
+    "sandwich_chicken": {
+      "size": {
+        "double": 300
+      },
+      "add_on": {
+        "extra chicken": 250
+      }
+    },
+    "sandwich_veggie": {
+      "size": {
+        "double": 250
+      },
+      "cheese": {
+        "yes": 75
+      },
+      "sauce": {
+        "pesto": 50,
+        "chipotle": 25
+      },
+      "add_on": {
+        "avocado": 150
+      }
+    },
+    "fries": {
+      "size": {
+        "large": 150
+      }
+    },
+    "chicken_nuggets": {},
+    "coke": {
+      "size": {
+        "medium": 50,
+        "large": 100
+      }
+    },
+    "sprite": {
+      "size": {
+        "medium": 50,
+        "large": 100
+      }
+    },
+    "water": {
+      "size": {
+        "medium": 50,
+        "large": 100
+      }
+    },
+    "ice_cream": {}
+  },
+  "add_ons": {
+    "sandwich_beef": [
+      "none",
+      "bacon"
+    ],
+    "sandwich_chicken": [
+      "none",
+      "extra chicken"
+    ],
+    "sandwich_veggie": [
+      "none",
+      "avocado"
+    ]
+  }
+}

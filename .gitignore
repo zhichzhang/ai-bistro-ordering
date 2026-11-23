@@ -79,6 +79,7 @@ apps/mobile/dist/
 packages/shared/*
 
 !packages/shared/menu.json
+!packages/shared/menu-pricing.json
 
 # =========================================
 # DATABASE / PRIVATE

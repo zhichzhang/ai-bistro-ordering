@@ -3,6 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createCartRouter } from "../cart.routes";
 import type { CartService } from "../../services/cart.service";
+import { CartNotActiveError, EmptyCartCheckoutError } from "../../errors/cart.errors";
 
 describe("cart routes", () => {
     const cartService = {
@@ -139,4 +140,19 @@ describe("cart routes", () => {
         expect(res.status).toBe(500);
         expect(res.body.error.message).toBe("DB failed");
     });
+
+    it("returns 400 with EMPTY_CART on checkout of an empty active cart", async () => {
+        vi.mocked(cartService.checkoutCart).mockRejectedValue(new EmptyCartCheckoutError());
+        const response = await request(app).post("/cart/cart-1/checkout");
+        expect(response.status).toBe(400);
+        expect(response.body.error.code).toBe("EMPTY_CART");
+    });
+
+    it("returns 409 with a structured code when checkout targets a submitted cart", async () => {
+        vi.mocked(cartService.checkoutCart).mockRejectedValue(new CartNotActiveError("cart-1"));
+        const response = await request(app).post("/cart/cart-1/checkout");
+        expect(response.status).toBe(409);
+        expect(response.body.error.code).toBe("CART_NOT_ACTIVE");
+    });
+
 });

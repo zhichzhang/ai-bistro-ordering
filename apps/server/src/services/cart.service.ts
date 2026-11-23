@@ -5,6 +5,7 @@ import { CartRepository } from "../db/repositories/cart.repository";
 import { MenuRepository } from "../db/repositories/menu.repository";
 
 import { MenuService } from "./menu.service";
+import { CartNotActiveError, EmptyCartCheckoutError } from "../errors/cart.errors";
 
 import type {
     CartContext,
@@ -50,15 +51,37 @@ export class CartService implements CartExecutionService {
         Map<string, MenuItem> =
         new Map();
 
+    private async assertCartActive(cartId: string): Promise<void> {
+        // Called while the cart row lock is held by inCartTransaction.
+        const cart = await CartRepository.getCartById(cartId);
+        if (!cart) throw new Error("Cart not found.");
+        if (cart.status !== "active") throw new CartNotActiveError(cartId);
+    }
+
+    private async withActiveCartTransaction<T>(cartId: string, work: () => Promise<T>): Promise<T> {
+        return CartRepository.inCartTransaction(cartId, async () => {
+            await this.assertCartActive(cartId);
+            return work();
+        });
+    }
+
     private async withItemTransaction<T>(id: string, work: () => Promise<T>): Promise<T> {
         const item = await CartRepository.getCartItemById(id);
-        return item ? CartRepository.inCartTransaction(item.cart_id, work) : work();
+        if (!item) return work();
+        return this.withActiveCartTransaction(item.cart_id, async () => {
+            // Re-check after acquiring the cart lock, since the item may have
+            // been changed or removed while this request was waiting.
+            const current = await CartRepository.getCartItemById(id);
+            if (!current) return work();
+            if (current.cart_id !== item.cart_id) throw new Error("Cart item changed owner.");
+            return work();
+        });
     }
 
     async addItem(cartId: string, input: {
         menuItemId: string; quantity: number; modifiers: Record<string, string>;
     }): Promise<CartItemRow> {
-        return CartRepository.inCartTransaction(cartId, () => this.addItemCore(cartId, input));
+        return this.withActiveCartTransaction(cartId, () => this.addItemCore(cartId, input));
     }
 
     async removeItemById(cartItemId: string): Promise<void> {
@@ -74,18 +97,18 @@ export class CartService implements CartExecutionService {
     }
 
     async checkoutCart(cartId: string) {
-        return CartRepository.inCartTransaction(cartId, () => this.checkoutCartCore(cartId));
+        return this.withActiveCartTransaction(cartId, () => this.checkoutCartCore(cartId));
     }
 
     async replaceCartItem(input: {
         cartId: string; cartItemId: string;
         body: { menuItemId: string; quantity: number; modifiers: Record<string, string> };
     }) {
-        return CartRepository.inCartTransaction(input.cartId, () => this.replaceCartItemCore(input));
+        return this.withActiveCartTransaction(input.cartId, () => this.replaceCartItemCore(input));
     }
 
     async clearCart(cartId: string): Promise<void> {
-        return CartRepository.inCartTransaction(cartId, () => this.clearCartCore(cartId));
+        return this.withActiveCartTransaction(cartId, () => this.clearCartCore(cartId));
     }
 
     async createCart(): Promise<{ chatSessionId: string; cart: CartRow }> {
@@ -135,7 +158,7 @@ export class CartService implements CartExecutionService {
     }): Promise<{
         resolvedCartItemId?: string | null;
     }> {
-        return CartRepository.inCartTransaction(input.cartId, () =>
+        return this.withActiveCartTransaction(input.cartId, () =>
             this.executeResolvedActionInTransaction(input)
         );
     }
@@ -749,10 +772,13 @@ export class CartService implements CartExecutionService {
             throw new Error("Cart not found.");
         }
 
+        // Defense in depth: checkout is also guarded inside the row-locked transaction.
+        if (cart.cart.status !== "active") {
+            throw new CartNotActiveError(cartId);
+        }
+
         if (cart.items.length === 0) {
-            throw new Error(
-                "Cannot checkout empty cart."
-            );
+            throw new EmptyCartCheckoutError();
         }
 
         const itemCount =
