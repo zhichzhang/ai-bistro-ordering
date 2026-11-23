@@ -1,5 +1,0 @@
-Clarification drawer visual-only patch
-- Centers each natural-width option pill in its own row.
-- Smoothes expansion to 480ms and collapse to 400ms.
-- Adds gentler fade/slide transitions.
-- Preserves click behavior and backend request logic.
