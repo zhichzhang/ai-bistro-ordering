@@ -56,11 +56,16 @@ Its central design choice is to **separate LLM interpretation from application s
 
 [**MenuMuse**](https://menumuse.app.space/) is a separately implemented browser edition adapted from this project. It retains the distinction between AI interpretation and trusted cart execution, but uses React and DeepSpace instead of this repository's Expo and Express/Prisma backend. [MenuMuse source](https://github.com/zhichzhang/menumuse).
 
+
 <details>
 <summary><strong>Contents</strong></summary>
 
+- [Demo and web edition](#demo-and-web-edition)
 - [Capabilities](#capabilities)
 - [Tech stack](#tech-stack)
+  - [AI Bistro Ordering — Mobile client](#ai-bistro-ordering--mobile-client)
+  - [AI Bistro Ordering — Backend and data](#ai-bistro-ordering--backend-and-data)
+  - [MenuMuse — Web edition](#menumuse--web-edition)
 - [Architecture](#architecture)
 - [Conversational ordering pipeline](#conversational-ordering-pipeline)
 - [Cart state and checkout](#cart-state-and-checkout)
@@ -75,6 +80,7 @@ Its central design choice is to **separate LLM interpretation from application s
 - [License](#license)
 
 </details>
+
 
 ## Capabilities
 
