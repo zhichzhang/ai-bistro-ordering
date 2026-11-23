@@ -18,7 +18,21 @@ Its central design choice is to **separate LLM interpretation from application s
 
 ## Demo and web edition
 
-[**Watch the AI Bistro Ordering demo**](https://www.youtube.com/shorts/E6LAJtAj_kY) · [Project write-up](https://zhichzhang.dev/2026-07-17/ai-bistro-ordering)
+<p align="center">
+  <a href="https://www.youtube.com/shorts/E6LAJtAj_kY">
+    <img
+      src="https://img.youtube.com/vi/E6LAJtAj_kY/maxresdefault.jpg"
+      alt="Watch the AI Bistro Ordering demo on YouTube"
+      width="650"
+    />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.youtube.com/shorts/E6LAJtAj_kY">Watch the AI Bistro Ordering demo on YouTube</a>
+</p>
+
+[Project write-up](https://zhichzhang.dev/2026-07-17/ai-bistro-ordering)
 
 [**MenuMuse**](https://menumuse.app.space/) is a separately implemented browser edition adapted from this project. It retains the distinction between AI interpretation and trusted cart execution, but uses React and DeepSpace instead of this repository's Expo and Express/Prisma backend. [MenuMuse source](https://github.com/zhichzhang/menumuse).
 
