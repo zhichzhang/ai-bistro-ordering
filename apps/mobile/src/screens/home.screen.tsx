@@ -13,6 +13,7 @@ import {
     StyleSheet,
     Text,
     View,
+    useWindowDimensions,
 } from "react-native";
 
 import {
@@ -26,6 +27,7 @@ import type { PromptMenuItem } from "../types/menu.types";
 
 import AIPromptBar from "../components/ai-prompt-bar.component";
 import CartSheet from "../components/cart-sheet.component";
+import ClarificationDrawer from "../components/clarification-drawer.component";
 import CategoryRail from "../components/category-rail.component";
 import MenuItemCard from "../components/menu-item-card.component";
 
@@ -91,6 +93,8 @@ function normalizeModifierCode(
  * Main ordering experience screen coordinating menu, cart, and AI flows.
  */
 export default function HomeScreen() {
+    const { width: viewportWidth } = useWindowDimensions();
+    const twoColumns = viewportWidth >= 640;
 
     // =====================================
     // GLOBAL STORE
@@ -224,10 +228,12 @@ export default function HomeScreen() {
         useState(false);
 
     const [
-        suggestions,
-        setSuggestions,
-    ] =
-        useState<string[]>([]);
+        clarification,
+        setClarification,
+    ] = useState<{ question: string; options: string[] } | null>(null);
+
+    // A ref prevents duplicate submissions before React applies the loading state.
+    const aiRequestInFlight = useRef(false);
 
     // =====================================
     // REFS
@@ -249,9 +255,7 @@ export default function HomeScreen() {
         ).current;
 
     const cartButtonRef =
-        useRef<View | null>(
-            null
-        );
+        useRef<View | null>(null);
 
     // =====================================
     // INITIAL CATEGORY
@@ -612,10 +616,9 @@ export default function HomeScreen() {
                 });
 
             } finally {
-
-                setCheckoutAnimating(
-                    false
-                );
+                // Let the 240ms exit animation finish before restoring the FAB.
+                await new Promise((resolve) => setTimeout(resolve, 260));
+                setCheckoutAnimating(false);
             }
         };
 
@@ -655,88 +658,51 @@ export default function HomeScreen() {
     /**
      * Execute an AI ordering turn against the backend orchestration pipeline.
      */
-    const handleAISubmit =
-        async () => {
+    const submitAIMessage = async (message: string, selectedChoice = false) => {
+        const text = message.trim();
+        if (!sessionId || !text || aiRequestInFlight.current) return;
+        if (!isEnglishPrompt(text)) {
+            showToast({ type: "error", message: "Please enter your request in English." });
+            return;
+        }
 
-            if (!sessionId) {
-                return;
-            }
-
-            if (!prompt.trim()) {
-                return;
-            }
-
-            if (!isEnglishPrompt(prompt)) {
-
-                showToast({
-                    type: "error",
-                    message:
-                        "Please enter your request in English.",
+        // Close immediately; show the original choices again if the request fails.
+        const previousClarification = clarification;
+        aiRequestInFlight.current = true;
+        setAiLoading(true);
+        setClarification(null);
+        try {
+            const response = await orderingService.sendMessage(sessionId, text);
+            if (response.cart) setCart(response.cart);
+            setPrompt("");
+            const followUp = response.resolutions.find(
+                (resolution) => resolution.status === "needs_clarification"
+            );
+            const options = followUp?.suggestions ?? [];
+            if (response.status === "needs_clarification" && options.length > 0) {
+                setClarification({
+                    question: response.assistantMessage,
+                    options: [...new Set(options)],
                 });
-
-                return;
+            } else if (response.status === "needs_clarification") {
+                showToast({ type: "info", message: response.assistantMessage });
+            } else if (response.status === "success") {
+                showToast({ type: "success", message: response.assistantMessage });
+            } else {
+                showToast({ type: "error", message: response.assistantMessage || "Unable to process request." });
             }
-
-            try {
-
-                setAiLoading(true);
-
-                const response =
-                    await orderingService.sendMessage(
-                        sessionId,
-                        prompt,
-                    );
-
-                setCart(response.cart);
-
-                setPrompt("");
-
-                if (
-                    response.status === "success"
-                ) {
-
-                    setSuggestions([]);
-
-                    showToast({
-                        type: "success",
-                        message:
-                        response.assistantMessage,
-                    });
-                }
-
-                if (
-                    response.status ===
-                    "needs_clarification"
-                ) {
-
-                    const clarifySuggestions =
-                        response.resolutions?.[0]
-                            ?.suggestions ?? [];
-
-                    setSuggestions(
-                        clarifySuggestions,
-                    );
-
-                    showToast({
-                        type: "info",
-                        message:
-                        response.assistantMessage,
-                    });
-                }
-
-            } catch {
-
-                showToast({
-                    type: "error",
-                    message:
-                        "Unable to process request.",
-                });
-
-            } finally {
-
-                setAiLoading(false);
+        } catch {
+            if (selectedChoice && previousClarification) {
+                setClarification(previousClarification);
             }
-        };
+            showToast({ type: "error", message: "Unable to process request." });
+        } finally {
+            aiRequestInFlight.current = false;
+            setAiLoading(false);
+        }
+    };
+
+    const handleAISubmit = () => submitAIMessage(prompt);
 
     if (!menu) {
         return null;
@@ -815,41 +781,17 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.aiBar}>
-                    {
-                        suggestions.length > 0 && (
-                            <View style={styles.chipsContainer}>
-                                {
-                                    suggestions.map((s) => (
-                                        <Pressable
-                                            key={s}
-                                            style={styles.chip}
-                                            onPress={() => {
-
-                                                setPrompt(s);
-
-                                                setSuggestions([]);
-
-                                                setTimeout(() => {
-                                                    void handleAISubmit();
-                                                }, 120);
-                                            }}
-                                        >
-                                            <Text style={styles.chipText}>
-                                                {s}
-                                            </Text>
-                                        </Pressable>
-                                    ))
-                                }
-                            </View>
-                        )
-                    }
-
                     <AIPromptBar
                         value={prompt}
                         onChange={setPrompt}
                         onSubmit={handleAISubmit}
                         loading={aiLoading}
                         disabled={aiLoading}
+                    />
+                    <ClarificationDrawer
+                        clarification={clarification}
+                        loading={aiLoading}
+                        onSelect={(choice) => { void submitAIMessage(choice, true); }}
                     />
                 </View>
 
@@ -912,14 +854,21 @@ export default function HomeScreen() {
                                     </Text>
                                 </View>
 
+                                <View style={styles.itemsGrid}>
                                 {category.items.map(
                                     (item) => (
+                                      <View
+                                        key={item.id}
+                                        style={[
+                                          styles.gridItem,
+                                          { width: twoColumns ? "48.5%" : "100%" },
+                                        ]}
+                                      >
                                         <MenuItemCard
                                             key={item.id}
                                             item={item}
                                             onPressAdd={async (
-                                                cardItem,
-                                                {}
+                                                cardItem
                                             ) => {
 
                                                 const hasModifiers =
@@ -979,8 +928,10 @@ export default function HomeScreen() {
                                                 );
                                             }}
                                         />
+                                      </View>
                                     )
                                 )}
+                                </View>
                             </View>
                         )
                     )}
@@ -993,15 +944,11 @@ export default function HomeScreen() {
                 </ScrollView>
 
                 <FloatingCartOverlay
-                    checkoutAnimating={
-                        checkoutAnimating
-                    }
+                    checkoutAnimating={checkoutAnimating}
                     animatedScale={cartScale}
                     ref={cartButtonRef}
                     count={cartCount}
-                    onPress={() =>
-                        setCartVisible(true)
-                    }
+                    onPress={() => setCartVisible(true)}
                 />
 
                 <View style={styles.bottomDock}>
@@ -1314,6 +1261,16 @@ const styles =
             marginTop: 26,
         },
 
+        itemsGrid: {
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+        },
+
+        gridItem: {
+            minWidth: 0,
+        },
+
         sectionHeader: {
             flexDirection: "row",
 
@@ -1394,55 +1351,5 @@ const styles =
 
             color: "#FFFFFF",
         },
-        chipsContainer: {
-            flexDirection: "row",
 
-            flexWrap: "wrap",
-
-            justifyContent: "center",
-
-            alignItems: "center",
-
-            marginHorizontal: 16,
-
-            marginBottom: 12,
-
-            gap: 10,
-        },
-
-        chip: {
-            backgroundColor: "#EEF4EA",
-
-            borderRadius: 999,
-
-            borderWidth: 1,
-
-            borderColor: "#D7E1D2",
-
-            paddingHorizontal: 16,
-            paddingVertical: 11,
-
-            shadowColor: "#000",
-
-            shadowOpacity: 0.05,
-
-            shadowRadius: 8,
-
-            shadowOffset: {
-                width: 0,
-                height: 4,
-            },
-
-            elevation: 2,
-        },
-
-        chipText: {
-            color: "#244229",
-
-            fontWeight: "700",
-
-            fontSize: 14,
-
-            letterSpacing: 0.2,
-        },
     });

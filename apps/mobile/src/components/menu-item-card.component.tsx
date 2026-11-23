@@ -32,37 +32,39 @@ export default function MenuItemCard({
                                          onPressItem,
                                      }: Props) {
     return (
-        <Pressable
-            style={styles.card}
-            onPress={() => onPressItem?.(item)}
-        >
-            <View>
+        <View style={styles.card}>
+            <Pressable
+                onPress={() => onPressItem?.(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`Customize ${item.name}`}
+            >
                 <MenuPhoto itemId={item.id} style={styles.image} />
-            </View>
+            </Pressable>
 
             <View style={styles.body}>
                 <View style={styles.row}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.name}>
-                            {item.name}
-                        </Text>
+                    <Pressable
+                        style={{ flex: 1 }}
+                        onPress={() => onPressItem?.(item)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Customize ${item.name}`}
+                    >
+                        <Text style={styles.name}>{item.name}</Text>
+                        <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+                    </Pressable>
 
-                        <Text style={styles.price}>
-                            ${item.price.toFixed(2)}
-                        </Text>
-                    </View>
-
+                    {/* A sibling, not a nested Pressable: web clicks reach Add. */}
                     <Pressable
                         style={styles.addButton}
                         onPress={() => onPressAdd?.(item)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add ${item.name}`}
                     >
-                        <Text style={styles.addButtonText}>
-                            Add
-                        </Text>
+                        <Text style={styles.addButtonText}>Add</Text>
                     </Pressable>
                 </View>
             </View>
-        </Pressable>
+        </View>
     );
 }
 
@@ -71,7 +73,7 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         overflow: "hidden",
         backgroundColor: "#FBFAF6",
-        marginBottom: 18,
+        marginBottom: 14,
         shadowColor: "#000",
         shadowOpacity: 0.06,
         shadowRadius: 14,
@@ -86,13 +88,13 @@ const styles = StyleSheet.create({
 
     image: {
         width: "100%",
-        height: 190,
+        height: 244,
         backgroundColor: "#E8ECE4",
     },
 
     body: {
         paddingHorizontal: 18,
-        paddingVertical: 16,
+        paddingVertical: 13,
     },
 
     row: {

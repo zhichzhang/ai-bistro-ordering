@@ -143,54 +143,42 @@ export class OrderingService {
         /**
          * Resolve lightweight clarification replies before normalization.
          */
-        const normalizedUserMessage =
-            input.userMessage
-                .trim()
-                .toLowerCase();
-        let interpretedMessage = input.userMessage;
-
         const recentAssistantMessage =
-            await ChatRepository.getLatestAssistantMessage(
-                chatSession.id
-            );
-
+            await ChatRepository.getLatestAssistantMessage(chatSession.id);
         const previous = recentAssistantMessage?.parsed_action as {
-            pendingClarification?: { suggestions?: string[]; actionType?: string };
+            pendingClarification?: {
+                suggestions?: string[];
+                actionType?: string;
+                originalAction?: NormalizedAction;
+            };
         } | null;
         const pending = previous?.pendingClarification;
-        if (pending?.actionType === "add_item" && pending.suggestions?.length) {
-            const clarificationCandidates =
-                await MenuService.findMenuItemCandidates(
-                    normalizedUserMessage
-                );
-            const matches = clarificationCandidates.filter(candidate =>
-                pending.suggestions?.includes(candidate.name));
-            if (matches.length === 1) {
-                interpretedMessage = `Add ${matches[0].name}`;
+
+        // The option is a reply to a stored action, not a brand-new "add one" request.
+        // Match the full offered name and keep the original quantity and modifiers.
+        const selectedName = pending?.actionType === "add_item"
+            ? pending.suggestions?.find((name) =>
+                name.trim().toLowerCase() === input.userMessage.trim().toLowerCase()
+            )
+            : undefined;
+        const selectedAction = selectedName && pending?.originalAction?.type === "add_item"
+            ? { ...pending.originalAction, target_text: selectedName,
+                raw_text: `${pending.originalAction.raw_text} (selected ${selectedName})` }
+            : null;
+
+        const normalization: NormalizationResult = selectedAction
+            ? {
+                intent: "add_item", status: "success", actions: [selectedAction],
+                confidence: 1,
             }
-        }
-
-        const normalization =
-            await this.normalizationService.normalizeMessage({
-                currentCartContext:
-                    PromptContextService
-                        .serializeCartContext(
-                            currentCartContext,
-                            menuContext
-                        ),
-
-                recentActionContext:
-                    PromptContextService
-                        .serializeRecentActions(
-                            recentActionContext
-                        ),
-
-                // availableModifierContext:
-                //     PromptContextService.serializeModifierContext(
-                //         menuContext
-                //     ),
-
-                userMessage: interpretedMessage,
+            : await this.normalizationService.normalizeMessage({
+                currentCartContext: PromptContextService.serializeCartContext(
+                    currentCartContext, menuContext
+                ),
+                recentActionContext: PromptContextService.serializeRecentActions(
+                    recentActionContext
+                ),
+                userMessage: input.userMessage,
             });
 
         const userMessageRow =
@@ -333,6 +321,7 @@ export class OrderingService {
                     parsedAction: { pendingClarification: {
                         actionType: normalizedAction.type,
                         suggestions: resolution.suggestions ?? [],
+                        originalAction: normalizedAction,
                     } },
                 });
                 const finalCart =

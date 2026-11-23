@@ -97,6 +97,8 @@ const styles =
             paddingHorizontal: 20,
             paddingVertical: 6,
             gap: 10,
+            flexGrow: 1,
+            justifyContent: "center",
         },
 
         pill: {

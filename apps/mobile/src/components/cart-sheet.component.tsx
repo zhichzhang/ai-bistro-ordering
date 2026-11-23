@@ -170,7 +170,7 @@ export default function CartSheet({
     /**
      * Animate the cart sheet out of view.
      */
-    const closeSheet = () => {
+    const closeSheet = (afterClose?: () => void) => {
         Animated.parallel([
             Animated.timing(
                 backdropOpacity,
@@ -189,8 +189,10 @@ export default function CartSheet({
                     useNativeDriver: true,
                 }
             ),
-        ]).start(() => {
+        ]).start(({ finished }) => {
+            if (!finished) return;
             onClose?.();
+            afterClose?.();
         });
     };
 
@@ -292,34 +294,31 @@ export default function CartSheet({
     /**
      * Confirm checkout before submitting the cart.
      */
-    const handleCheckoutPress =
-        () => {
-            Alert.alert(
-                "Confirm checkout",
-                "Do you want to pay now?",
-                [
-                    {
-                        text: "Cancel",
-                        style: "cancel",
-                    },
+    const handleCheckoutPress = () => {
+        // React Native's Alert.alert does not display confirmation dialogs on web.
+        if (Platform.OS === "web") {
+            if (window.confirm("Confirm checkout\n\nDo you want to pay now?")) {
+                closeSheet(() => { void onCheckout?.(); });
+            }
+            return;
+        }
 
-                    {
-                        text: "Pay now",
-                        style: "default",
-
-                        onPress: () => {
-                            onCheckout?.();
-
-                            closeSheet();
-                        },
-                    },
-                ],
-
+        Alert.alert(
+            "Confirm checkout",
+            "Do you want to pay now?",
+            [
+                { text: "Cancel", style: "cancel" },
                 {
-                    cancelable: true,
-                }
-            );
-        };
+                    text: "Pay now",
+                    style: "default",
+                    onPress: () => {
+                        closeSheet(() => { void onCheckout?.(); });
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
+    };
 
     if (!visible) {
         return null;
@@ -332,7 +331,7 @@ export default function CartSheet({
             animationType="none"
             presentationStyle="overFullScreen"
             statusBarTranslucent
-            onRequestClose={closeSheet}
+            onRequestClose={() => closeSheet()}
         >
             <View style={styles.backdrop}>
                 <Animated.View
@@ -353,7 +352,7 @@ export default function CartSheet({
                         style={
                             StyleSheet.absoluteFillObject
                         }
-                        onPress={closeSheet}
+                        onPress={() => closeSheet()}
                     />
                 </Animated.View>
 

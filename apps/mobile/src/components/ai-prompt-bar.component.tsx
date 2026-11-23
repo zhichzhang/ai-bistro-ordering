@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import {
     ActivityIndicator,
     Animated,
     Easing,
+    Platform,
     Pressable,
     StyleSheet,
     Text,
@@ -36,42 +37,36 @@ export default function AIPromptBar({
                                         loading = false,
                                         disabled = false,
                                     }: Props) {
-    const sweepAnim =
-        useRef(
-            new Animated.Value(-220)
-        ).current;
+    const sweepAnim = useRef(new Animated.Value(-220)).current;
+    const [borderWidth, setBorderWidth] = useState(0);
 
     useEffect(() => {
-        if (!loading) {
+        // Wait for the measured width so the sweep always crosses the full bar,
+        // including on wide desktop browsers.
+        if (!loading || borderWidth <= 0) {
             sweepAnim.stopAnimation();
-
             sweepAnim.setValue(-220);
-
             return;
         }
 
-        const loop =
-            Animated.loop(
-                Animated.timing(
-                    sweepAnim,
-                    {
-                        toValue: 420,
-                        duration: 1600,
-                        easing: Easing.linear,
-                        useNativeDriver: true,
-                    }
-                )
-            );
+        sweepAnim.setValue(-220);
+        const loop = Animated.loop(
+            Animated.timing(sweepAnim, {
+                toValue: borderWidth,
+                duration: 1750,
+                easing: Easing.linear,
+                // JS driver is reliable for repeated sweeps in React Native Web.
+                useNativeDriver: Platform.OS !== 'web',
+            }),
+            { iterations: -1, resetBeforeIteration: true }
+        );
 
         loop.start();
-
         return () => {
             loop.stop();
+            sweepAnim.stopAnimation();
         };
-    }, [
-        loading,
-        sweepAnim,
-    ]);
+    }, [loading, borderWidth, sweepAnim]);
 
     const submitDisabled =
         disabled ||
@@ -119,7 +114,10 @@ export default function AIPromptBar({
                             placeholderTextColor="#93A08F"
                             value={value}
                             onChangeText={onChange}
-                            style={styles.input}
+                            style={[
+                                styles.input,
+                                Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+                            ]}
                             returnKeyType="send"
                             onSubmitEditing={onSubmit}
                             editable={!disabled && !loading}
@@ -128,6 +126,7 @@ export default function AIPromptBar({
                         <Pressable
                             style={[
                                 styles.sendButton,
+                                Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
 
                                 submitDisabled &&
                                 styles.sendButtonDisabled,
@@ -151,7 +150,15 @@ export default function AIPromptBar({
         <View style={styles.container}>
             {
                 loading ? (
-                    <View style={styles.gradientWrapper}>
+                    <View
+                        style={styles.gradientWrapper}
+                        onLayout={(event) => {
+                            const nextWidth = event.nativeEvent.layout.width;
+                            setBorderWidth((current) =>
+                                Math.abs(current - nextWidth) > 1 ? nextWidth : current
+                            );
+                        }}
+                    >
                         <Animated.View
                             style={[
                                 styles.rotatingGradient,

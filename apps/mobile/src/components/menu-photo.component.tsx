@@ -1,19 +1,17 @@
-import React, { useState } from "react";
-import { Image, View } from "react-native";
-import type { StyleProp, ViewStyle } from "react-native";
+import React from "react";
+import { Image, StyleSheet, View } from "react-native";
+import type { ImageSourcePropType, StyleProp, ViewStyle } from "react-native";
 
-const menuGrid = require("../../assets/images/menu-grid.png");
-
-const tiles: Record<string, [number, number]> = {
-    sandwich_beef: [0, 0],
-    sandwich_chicken: [1, 0],
-    sandwich_veggie: [2, 0],
-    fries: [0, 1],
-    chicken_nuggets: [1, 1],
-    coke: [2, 1],
-    sprite: [0, 2],
-    water: [1, 2],
-    ice_cream: [2, 2],
+const photos: Record<string, ImageSourcePropType> = {
+    sandwich_beef: require("../../assets/images/menu-items/sandwich_beef.png"),
+    sandwich_chicken: require("../../assets/images/menu-items/sandwich_chicken.png"),
+    sandwich_veggie: require("../../assets/images/menu-items/sandwich_veggie.png"),
+    fries: require("../../assets/images/menu-items/fries.png"),
+    chicken_nuggets: require("../../assets/images/menu-items/chicken_nuggets.png"),
+    coke: require("../../assets/images/menu-items/coke.png"),
+    sprite: require("../../assets/images/menu-items/sprite.png"),
+    water: require("../../assets/images/menu-items/water.png"),
+    ice_cream: require("../../assets/images/menu-items/ice_cream.png"),
 };
 
 type Props = {
@@ -22,31 +20,27 @@ type Props = {
 };
 
 export default function MenuPhoto({ itemId, style }: Props) {
-    const [size, setSize] = useState({ width: 0, height: 0 });
-    const tile = tiles[itemId];
-
+    const photo = photos[itemId];
     return (
-        <View
-            style={[style, { overflow: "hidden" }]}
-            onLayout={({ nativeEvent: { layout } }) => {
-                if (size.width !== layout.width || size.height !== layout.height) {
-                    setSize({ width: layout.width, height: layout.height });
-                }
-            }}
-        >
-            {tile && size.width > 0 && size.height > 0 && (
+        <View style={[styles.frame, style]}>
+            {photo ? (
                 <Image
-                    source={menuGrid}
-                    resizeMode="stretch"
-                    style={{
-                        position: "absolute",
-                        width: size.width * 3,
-                        height: size.height * 3,
-                        left: -tile[0] * size.width,
-                        top: -tile[1] * size.height,
-                    }}
+                    source={photo}
+                    resizeMode="cover"
+                    style={styles.image}
                 />
-            )}
+            ) : null}
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    frame: {
+        overflow: "hidden",
+        backgroundColor: "#E8ECE4",
+    },
+    image: {
+        width: "100%",
+        height: "100%",
+    },
+});
