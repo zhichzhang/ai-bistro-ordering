@@ -1,0 +1,176 @@
+{
+  "restaurant_name": "The Intelligent Bistro",
+  "categories": [
+    {
+      "id": "cat_sandwiches",
+      "name": "Sandwiches",
+      "sort_order": 1,
+      "items": [
+        {
+          "id": "sandwich_beef",
+          "name": "Grilled Beef Sandwich",
+          "category": "Sandwiches",
+          "price": 8.99,
+          "image_url": "menu://sandwich_beef",
+          "modifiers": {
+            "size": ["single", "double"],
+            "cheese": ["no", "yes"],
+            "spice": ["mild", "spicy"]
+          }
+        },
+        {
+          "id": "sandwich_chicken",
+          "name": "Crispy Chicken Sandwich",
+          "category": "Sandwiches",
+          "price": 7.99,
+          "image_url": "menu://sandwich_chicken",
+          "modifiers": {
+            "size": ["single", "double"],
+            "spice": ["mild", "spicy"]
+          }
+        },
+        {
+          "id": "sandwich_veggie",
+          "name": "Garden Veggie Sandwich",
+          "category": "Sandwiches",
+          "price": 7.49,
+          "image_url": "menu://sandwich_veggie",
+          "modifiers": {
+            "size": ["single", "double"],
+            "cheese": ["no", "yes"],
+            "sauce": ["mayo", "pesto", "chipotle"],
+            "toasted": ["yes", "no"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cat_sides",
+      "name": "Sides",
+      "sort_order": 2,
+      "items": [
+        {
+          "id": "fries",
+          "name": "Truffle Fries",
+          "category": "Sides",
+          "price": 3.5,
+          "image_url": "menu://fries",
+          "modifiers": {
+            "size": ["small", "large"]
+          }
+        },
+        {
+          "id": "chicken_nuggets",
+          "name": "Chicken Nuggets",
+          "category": "Sides",
+          "price": 4.99,
+          "image_url": "menu://chicken_nuggets",
+          "modifiers": {
+            "sauce": ["bbq", "sweet chili", "ketchup"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cat_drinks",
+      "name": "Drinks",
+      "sort_order": 3,
+      "items": [
+        {
+          "id": "coke",
+          "name": "Classic Cola",
+          "category": "Drinks",
+          "price": 2.5,
+          "image_url": "menu://coke",
+          "modifiers": {
+            "size": ["small", "medium", "large"],
+            "ice": ["with ice", "no ice"]
+          }
+        },
+        {
+          "id": "sprite",
+          "name": "Lemon Soda",
+          "category": "Drinks",
+          "price": 2.5,
+          "image_url": "menu://sprite",
+          "modifiers": {
+            "size": ["small", "medium", "large"],
+            "ice": ["with ice", "no ice"]
+          }
+        },
+        {
+          "id": "water",
+          "name": "Mineral Water",
+          "category": "Drinks",
+          "price": 1.5,
+          "image_url": "menu://water",
+          "modifiers": {
+            "size": ["small", "medium", "large"],
+            "ice": ["with ice", "no ice"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cat_desserts",
+      "name": "Desserts",
+      "sort_order": 4,
+      "items": [
+        {
+          "id": "ice_cream",
+          "name": "Artisan Ice Cream",
+          "category": "Desserts",
+          "price": 3.99,
+          "image_url": "menu://ice_cream",
+          "modifiers": {
+            "flavor": ["vanilla", "chocolate", "strawberry"]
+          }
+        }
+      ]
+    }
+  ],
+  "aliases": {
+    "sandwich": [
+      "sandwich_beef",
+      "sandwich_chicken",
+      "sandwich_veggie"
+    ],
+
+    "burger": [
+      "sandwich_beef",
+      "sandwich_chicken",
+      "sandwich_veggie"
+    ],
+
+    "beef sandwich": ["sandwich_beef"],
+    "beef burger": ["sandwich_beef"],
+
+    "chicken sandwich": ["sandwich_chicken"],
+    "chicken burger": ["sandwich_chicken"],
+
+    "veggie sandwich": ["sandwich_veggie"],
+    "veggie burger": ["sandwich_veggie"],
+
+    "fries": ["fries"],
+    "truffle fries": ["fries"],
+
+    "nuggets": ["chicken_nuggets"],
+    "chicken nuggets": ["chicken_nuggets"],
+
+    "cola": ["coke"],
+    "coke": ["coke"],
+
+    "soda": ["coke", "sprite"],
+    "soft drink": ["coke", "sprite"],
+
+    "lemon soda": ["sprite"],
+    "sprite": ["sprite"],
+
+    "water": ["water"],
+    "mineral water": ["water"],
+    "bottled water": ["water"],
+
+    "ice cream": ["ice_cream"],
+    "dessert": ["ice_cream"]
+  }
+}
