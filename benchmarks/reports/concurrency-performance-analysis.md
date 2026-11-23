@@ -2,7 +2,7 @@
 
 > **Evidence scope:** local Express + Prisma 7 + PostgreSQL with deterministic mock LLM for AI tests, one Node.js process. These were historical before/after runs under explicitly controlled test conditions, **not** production deployments or payment-order measurements. All cited CSVs are preserved in this repository.
 
-[Benchmark index](../README.md) · [Main project README](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/README.md)
+[Benchmark index](../README.md) · [Main project README](../../../../../../../../Downloads/ai-bistro-ordering-reviewed-readmes/README.md)
 
 ## Executive summary
 
@@ -46,7 +46,7 @@ Per-round extra successes = `max(0, successfulCheckoutResponses − 1)`. As a fr
 
 **Avoid misleading speed claims:** the batch duration fell after the fix but 501 requests now take the shorter **rejection** path. These are different executed workloads, not proof that a successful checkout alone became faster. All IDs are for **preview orders**, not charged payments.
 
-**Evidence:** [before rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/duplicate-checkout-20261123-004132-867-rounds.csv) · [after rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/duplicate-checkout-20261123-010050-931-rounds.csv) · [regression rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/duplicate-checkout-20261123-024142-122-rounds.csv) · [experiment protocol](../docs/duplicate-checkout.md).
+**Evidence:** [before rounds](../results/before-fix/duplicate-checkout-20261123-004132-867-rounds.csv) · [after rounds](../results/after-fix/duplicate-checkout-20261123-010050-931-rounds.csv) · [regression rounds](../results/regression/duplicate-checkout-20261123-024142-122-rounds.csv) · [experiment protocol](../docs/duplicate-checkout.md).
 
 ## Experiment 2 — Cart lifecycle and stale writes
 
@@ -60,7 +60,7 @@ The harness tests checkout racing with `add`, `update`, and `clear`, plus a late
 
 The original six-row CSV contains **one clear empty-cart checkout HTTP 500**, which was subsequently mapped to a controlled HTTP 400. Other original `correct=false` entries cannot be presented as six real backend failures because the initial harness incorrectly classified some valid interleavings. This limitation is retained rather than retroactively rewriting evidence.
 
-**Evidence:** [before rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/cart-lifecycle-20261123-010658-637-rounds.csv) · [after rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/cart-lifecycle-20261123-011239-579-rounds.csv) · [regression rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/cart-lifecycle-20261123-024149-617-rounds.csv) · [protocol](../docs/cart-lifecycle-race.md).
+**Evidence:** [before rounds](../results/before-fix/cart-lifecycle-20261123-010658-637-rounds.csv) · [after rounds](../results/after-fix/cart-lifecycle-20261123-011239-579-rounds.csv) · [regression rounds](../results/regression/cart-lifecycle-20261123-024149-617-rounds.csv) · [protocol](../docs/cart-lifecycle-race.md).
 
 ## Experiment 3 — Concurrent AI turns
 
@@ -76,7 +76,7 @@ The fix rejects overlapping B immediately with HTTP `409 TURN_IN_PROGRESS` and r
 
 **Regression:** a later 4-round smoke (two per mode) passed after the transaction-context fix.
 
-**Evidence:** [before rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/concurrent-ai-turns-20261123-093812-732-rounds.csv) · [after rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/concurrent-ai-turns-20261123-094509-119-rounds.csv) · [regression rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/concurrent-ai-turns-20261123-104153-350-rounds.csv) · [protocol](../docs/concurrent-ai-turns.md).
+**Evidence:** [before rounds](../results/before-fix/concurrent-ai-turns-20261123-093812-732-rounds.csv) · [after rounds](../results/after-fix/concurrent-ai-turns-20261123-094509-119-rounds.csv) · [regression rounds](../results/regression/concurrent-ai-turns-20261123-104153-350-rounds.csv) · [protocol](../docs/concurrent-ai-turns.md).
 
 ## Experiment 4 — Independent multi-kiosk workflow reliability and latency
 
@@ -97,7 +97,7 @@ The after-fix run achieved 555 unique completed workflows and 1,110 successful A
 
 **Remediation and causal evidence:** the cart code propagates an active Prisma transaction via `AsyncLocalStorage`, while pre-fix menu queries bypassed it by calling the global Prisma Client. During the failing 10-kiosk test, PostgreSQL showed up to **10 `idle in transaction`** connections for several seconds, with AI responses near five seconds. Changing `MenuRepository` to use the shared `db()` client eliminated that failure pattern in the matched after-fix experiment. This is strong evidence of **transaction-context-dependent connection contention**, but does not by itself quantify pool wait time or conclusively identify a particular driver timeout.
 
-**Evidence:** [before rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/multi-kiosk-20261123-100310-360-rounds.csv), [before requests](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/multi-kiosk-20261123-100310-360-requests.csv), [after rounds](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/multi-kiosk-20261123-103437-123-rounds.csv), [after kiosks](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/multi-kiosk-20261123-103437-123-kiosks.csv), [after requests](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/multi-kiosk-20261123-103437-123-requests.csv) · [protocol](../docs/multi-kiosk-ordering.md).
+**Evidence:** [before rounds](../results/before-fix/multi-kiosk-20261123-100310-360-rounds.csv), [before requests](../results/before-fix/multi-kiosk-20261123-100310-360-requests.csv), [after rounds](../results/after-fix/multi-kiosk-20261123-103437-123-rounds.csv), [after kiosks](../results/after-fix/multi-kiosk-20261123-103437-123-kiosks.csv), [after requests](../results/after-fix/multi-kiosk-20261123-103437-123-requests.csv) · [protocol](../docs/multi-kiosk-ordering.md).
 
 ## Additional controlled test — Late AI vs checkout
 

@@ -1,6 +1,6 @@
 # Multi-Kiosk AI Ordering — Closed-Loop Load Benchmark
 
-[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md)
+[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-reviewed-readmes/benchmarks/reports/concurrency-performance-analysis.md)
 
 ## Workload
 
@@ -15,7 +15,7 @@ The test uses real Express, Prisma, and PostgreSQL with `LLM_PROVIDER=mock`. **N
 .\benchmarks\scripts\run-multi-kiosk-ordering.ps1 -Levels '5,10,20,50,100' -Repeats 3
 ```
 
-Default: 3 warmups, 1,500ms pause between waves, 90-second individual request timeout. Runner: [`run-multi-kiosk-ordering.ps1`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/run-multi-kiosk-ordering.ps1); test implementation: [`multi-kiosk-ordering.mjs`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/multi-kiosk-ordering.mjs).
+Default: 3 warmups, 1,500ms pause between waves, 90-second individual request timeout. Runner: [`run-multi-kiosk-ordering.ps1`](../scripts/run-multi-kiosk-ordering.ps1); test implementation: [`multi-kiosk-ordering.mjs`](../scripts/multi-kiosk-ordering.mjs).
 
 **Output behavior:** the current runner writes new CSVs into `benchmarks/results/performance-baseline/` regardless of whether the code is a baseline or a fixed build. After validating a run, archive it under `results/before-fix/`, `results/after-fix/` or `results/regression/` manually; the output folder name is not proof of its fix status. A nonzero process exit after CSV creation means at least one workflow failed or there was a harness error.
 
@@ -30,7 +30,7 @@ Default: 3 warmups, 1,500ms pause between waves, 90-second individual request ti
 | 100 | 15/300 | 300/300 | 6,461.64 | 1,968.82 | 22.92 |
 | **Total** | **58/555** | **555/555** | — | — | — |
 
-Baseline run: [`20261123-100310-360-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/multi-kiosk-20261123-100310-360-rounds.csv). After-fix run: [`20261123-103437-123-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/multi-kiosk-20261123-103437-123-rounds.csv). Each run has matching [`kiosks.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/multi-kiosk-20261123-103437-123-kiosks.csv) and [`requests.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/multi-kiosk-20261123-103437-123-requests.csv) using the same run ID.
+Baseline run: [`20261123-100310-360-rounds.csv`](../results/before-fix/multi-kiosk-20261123-100310-360-rounds.csv). After-fix run: [`20261123-103437-123-rounds.csv`](../results/after-fix/multi-kiosk-20261123-103437-123-rounds.csv). Each run has matching [`kiosks.csv`](../results/after-fix/multi-kiosk-20261123-103437-123-kiosks.csv) and [`requests.csv`](../results/after-fix/multi-kiosk-20261123-103437-123-requests.csv) using the same run ID.
 
 The transaction-context correction made `MenuRepository` use the active Prisma transaction client (`db()`) instead of unconditional global-client queries. The pre-fix workload and PostgreSQL observations were consistent with additional pool acquisition while transactions remained open. The before/after results strongly support this explanation, but **do not independently isolate a specific driver timeout or establish a production-capacity limit**.
 

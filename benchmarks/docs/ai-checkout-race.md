@@ -1,6 +1,6 @@
 # Controlled AI vs Checkout Race
 
-[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md)
+[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-reviewed-readmes/benchmarks/reports/concurrency-performance-analysis.md)
 
 ## Purpose
 
@@ -26,7 +26,7 @@ Start a loopback-only local mock backend, configured per the [benchmark index](.
 # For the previously recorded controlled validation: -Repeats 30
 ```
 
-Runner: [`run-ai-checkout-race.ps1`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/run-ai-checkout-race.ps1). Test: [`ai-checkout-race.mjs`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/ai-checkout-race.mjs). Results are timestamped round- and request-level CSVs in the default `benchmarks/results/` directory.
+Runner: [`run-ai-checkout-race.ps1`](../scripts/run-ai-checkout-race.ps1). Test: [`ai-checkout-race.mjs`](../scripts/ai-checkout-race.mjs). Results are timestamped round- and request-level CSVs in the default `benchmarks/results/` directory.
 
 ## Evidence and scope
 

@@ -1,6 +1,6 @@
 # Duplicate Checkout — Contended-Cart Correctness
 
-[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md)
+[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-reviewed-readmes/benchmarks/reports/concurrency-performance-analysis.md)
 
 ## Question and invariant
 
@@ -8,7 +8,7 @@ What happens if 20, 50, or 100 checkout requests race against **the same active 
 
 ## Method
 
-The k6 scenario [`duplicate-checkout-stress.js`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scenarios/duplicate-checkout-stress.js) creates a fresh cart, adds an item, sends simultaneous checkout attempts via `http.batch`, and retrieves final state. The PowerShell runner captures structured console events and parses them into two CSVs. Each level (`20,50,100`) is repeated 3 times, yielding `3 × (20+50+100) = 510` checkout attempts across 9 rounds. Setup and verification HTTP requests are **not** checkout attempts.
+The k6 scenario [`duplicate-checkout-stress.js`](../scenarios/duplicate-checkout-stress.js) creates a fresh cart, adds an item, sends simultaneous checkout attempts via `http.batch`, and retrieves final state. The PowerShell runner captures structured console events and parses them into two CSVs. Each level (`20,50,100`) is repeated 3 times, yielding `3 × (20+50+100) = 510` checkout attempts across 9 rounds. Setup and verification HTTP requests are **not** checkout attempts.
 
 ```powershell
 # From repository root with the isolated local benchmark API running
@@ -28,9 +28,9 @@ The original checkout path allowed concurrent callers to observe the cart as act
 | 100 × 3 | 300/300 | 297 | 3/300 | 297 |
 | **Total** | **510/510** | **501** | **9/510** | **501** |
 
-- Before: [`20261123-004132-867-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/duplicate-checkout-20261123-004132-867-rounds.csv) and [`requests.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/duplicate-checkout-20261123-004132-867-requests.csv).
-- After: [`20261123-010050-931-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/duplicate-checkout-20261123-010050-931-rounds.csv) and [`requests.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/duplicate-checkout-20261123-010050-931-requests.csv).
-- Regression: [`20261123-024142-122-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/duplicate-checkout-20261123-024142-122-rounds.csv) and [`requests.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/duplicate-checkout-20261123-024142-122-requests.csv): 9/9 correct.
+- Before: [`20261123-004132-867-rounds.csv`](../results/before-fix/duplicate-checkout-20261123-004132-867-rounds.csv) and [`requests.csv`](../results/before-fix/duplicate-checkout-20261123-004132-867-requests.csv).
+- After: [`20261123-010050-931-rounds.csv`](../results/after-fix/duplicate-checkout-20261123-010050-931-rounds.csv) and [`requests.csv`](../results/after-fix/duplicate-checkout-20261123-010050-931-requests.csv).
+- Regression: [`20261123-024142-122-rounds.csv`](../results/regression/duplicate-checkout-20261123-024142-122-rounds.csv) and [`requests.csv`](../results/regression/duplicate-checkout-20261123-024142-122-requests.csv): 9/9 correct.
 
 `duplicateSuccesses = max(0, successfulCheckouts − 1)` per round. All 9 after-fix rounds have one unique returned order ID, one successor cart ID and a one-step checkout revision increase. The pre-fix run returned 510 distinct order IDs across its 9 rounds. **These are preview-order response identifiers, not paid orders.**
 

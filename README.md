@@ -42,11 +42,13 @@ Its central design choice is to **separate LLM interpretation from application s
 - [Architecture](#architecture)
 - [Conversational ordering pipeline](#conversational-ordering-pipeline)
 - [Cart state and checkout](#cart-state-and-checkout)
+- [Concurrency and transaction safety](#concurrency-and-transaction-safety)
 - [Persistence](#persistence)
 - [API](#api)
 - [Project structure](#project-structure)
 - [Local development](#local-development)
 - [Testing](#testing)
+- [Concurrency and performance benchmarks](#concurrency-and-performance-benchmarks)
 - [Scope and limitations](#scope-and-limitations)
 - [License](#license)
 
@@ -62,6 +64,7 @@ Its central design choice is to **separate LLM interpretation from application s
 - **Deterministic cart operations.** Add, remove, replace modifiers, change quantity, or clear the cart, with canonical line identities that merge equivalent configurations.
 - **Checkout and session rotation.** Submitting a nonempty cart marks it submitted and creates a fresh cart and chat session; the client animates the floating cart during the transition.
 - **Inspectable history.** Persist chat messages and ordering-action records alongside menu and cart data.
+- **Concurrency-safe cart and AI operations.** Use PostgreSQL row-level locks, active-cart validation, and per-session turn admission to reject conflicting requests; deterministic stress tests verify the behavior.
 
 ## Tech stack
 
@@ -173,9 +176,19 @@ Modifier choices are stored as structured records with `price_delta_cents` value
 
 `POST /api/carts/:cartId/checkout` submits a nonempty cart, increments its revision, and creates a new cart with an associated chat session. The client replaces its active identifiers and plays the floating-cart exit/return animation. This is a **preview checkout**: it generates an order confirmation response but does not charge a payment method or fulfill a restaurant order.
 
+## Concurrency and transaction safety
+
+Cart mutations and checkout operate inside Prisma interactive transactions that lock the target cart row with PostgreSQL `SELECT ... FOR UPDATE`. While the lock is held, the service checks that the cart remains `active`, preventing a second checkout or a late mutation from updating a submitted cart. A checkout of an empty cart returns a controlled client error rather than a server exception.
+
+Repositories share the active Prisma transaction through a Node.js `AsyncLocalStorage` context (`db()`). The menu repository was updated to use that context instead of issuing unconditional queries through the global Prisma client; controlled multi-kiosk benchmarks documented a large reliability improvement after this change. This is a **transaction-context consistency fix**, not a claim of a formally proven driver-level deadlock.
+
+Concurrent requests against the **same chat session** are handled with a process-local AI turn guard. An overlapping turn receives HTTP `409 TURN_IN_PROGRESS` and may be retried after the first turn completes. The server does **not** automatically queue turns, and this guard is not shared across multiple backend replicas.
+
+Details and recorded invariants are documented in the [benchmark protocols](benchmarks/README.md) and [quantitative analysis](benchmarks/reports/concurrency-performance-analysis.md).
+
 ## Persistence
 
-The PostgreSQL schema is defined in [`apps/server/prisma/schema.prisma`](apps/server/prisma/schema.prisma); versioned SQL migrations are in [`apps/server/prisma/migrations`](apps/server/prisma/migrations). 
+The PostgreSQL schema is defined in [`apps/server/prisma/schema.prisma`](apps/server/prisma/schema.prisma); versioned SQL migrations are in [`apps/server/prisma/migrations`](apps/server/prisma/migrations).
 
 | Domain | Stored data |
 | --- | --- |
@@ -240,6 +253,12 @@ apps/
       mappers/          # Persistence-to-domain conversions
       prompts/          # Normalization and resolution instructions
       scripts/          # Menu ingestion
+benchmarks/
+  README.md             # Local benchmark setup and scenarios
+  docs/                 # Per-scenario procedures and invariants
+  reports/              # Quantitative before/after analysis
+  scripts/              # Benchmark runners and parsers
+  results/              # Archived before/after and regression CSVs
 packages/
   shared/
     menu.json           # Menu catalogue
@@ -346,6 +365,23 @@ npm run test:run
 ```
 
 Use `npm test` for watch mode. The database connectivity test runs only when `DATABASE_URL` is present. These tests are not a substitute for verifying a configured LLM provider or a real checkout flow in the app.
+
+For database-backed race, regression and local mock-LLM load scenarios, see [`benchmarks/README.md`](benchmarks/README.md). Run these only against a **dedicated local benchmark database**; k6 and a local mock provider are required for the corresponding scenarios.
+
+## Concurrency and performance benchmarks
+
+We evaluated **single-cart contention**, **cart lifecycle races**, **same-session AI turn overlap**, and **independent multi-kiosk ordering** against a separate local PostgreSQL database. AI tests used a deterministic mock LLM and a single Express process; all figures describe **controlled test workloads**, not production capacity or payment processing.
+
+| Experiment | Before fix | After fix | Later regression |
+| --- | ---: | ---: | ---: |
+| Duplicate checkout (20/50/100 parallel attempts per cart, 3 repeats) | 501 extra successful checkout responses / 510 attempts | **0** extra; 9 accepted, 501 expected HTTP 409 | 9/9 rounds correct |
+| Cart lifecycle (checkout vs add/update/clear) | 6 diagnostic rounds; harness misclassified some valid outcomes; one empty-cart HTTP 500 | **90/90** rounds correct | 30/30 correct |
+| Same-session AI turns (Add → Clear) | **0/30** semantic order matches in controlled race | **30/30** correct with rejection and explicit retry; **60/60** across both scenarios | 4/4 correct |
+| Multi-kiosk workflow (5–100 concurrent kiosks, 3 repeats each) | **58/555** completed | **555/555 (100%)** completed | Final full after-fix run |
+
+At **10 concurrent kiosks**, mean per-wave AI request P95 decreased from **5,166.59 ms** to **187.69 ms** (approximately **96.4%**). The before-fix latency population includes **failed business responses**, so this is not a like-for-like comparison of successful AI requests. In the fixed build, mean completed preview-order throughput across three waves ranged from **18.91 to 24.85 orders/s** at 5–20 kiosks and was **22.92 orders/s** at 100 kiosks; these **short-wave completion rates** are not sustained throughput benchmarks.
+
+For exact test definitions, scripts, per-load results and archived CSVs, see the [benchmark guide](benchmarks/README.md) and [full quantitative report](benchmarks/reports/concurrency-performance-analysis.md). The recorded results do not establish multi-replica correctness, live provider latency or long-duration production scalability.
 
 ## Scope and limitations
 

@@ -1,6 +1,6 @@
 # Concurrent AI Turns — Ordering and Session Guard
 
-[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md)
+[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-reviewed-readmes/benchmarks/reports/concurrency-performance-analysis.md)
 
 ## Problem
 
@@ -23,7 +23,7 @@ A **synchronous, per-session in-memory admission guard** rejects a second overla
 .\benchmarks\scripts\run-concurrent-ai-turns.ps1 -Repeats 30
 ```
 
-Runner: [`run-concurrent-ai-turns.ps1`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/run-concurrent-ai-turns.ps1). Test: [`concurrent-ai-turns.mjs`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/concurrent-ai-turns.mjs).
+Runner: [`run-concurrent-ai-turns.ps1`](../scripts/run-concurrent-ai-turns.ps1). Test: [`concurrent-ai-turns.mjs`](../scripts/concurrent-ai-turns.mjs).
 
 ## Recorded results
 
@@ -33,9 +33,9 @@ Runner: [`run-concurrent-ai-turns.ps1`](../../../../../../../../Downloads/ai-bis
 | Add + Clear | **0/30** | **30/30** |
 | Total | No single equivalent correctness score in original CSV | **60/60** |
 
-- Before: [`20261123-093812-732-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/concurrent-ai-turns-20261123-093812-732-rounds.csv): original diagnostic records `semanticOrderMatches=false` in all 30 Add+Clear rounds. An observed reordering was **not** automatically a database consistency violation or an existing documented FIFO promise.
-- After: [`20261123-094509-119-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/concurrent-ai-turns-20261123-094509-119-rounds.csv): **60/60 `correct=true`**, with controlled 409 then explicit sequential retry.
-- Regression: [`20261123-104153-350-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/concurrent-ai-turns-20261123-104153-350-rounds.csv): **4/4** correct, with two cases per mode.
+- Before: [`20261123-093812-732-rounds.csv`](../results/before-fix/concurrent-ai-turns-20261123-093812-732-rounds.csv): original diagnostic records `semanticOrderMatches=false` in all 30 Add+Clear rounds. An observed reordering was **not** automatically a database consistency violation or an existing documented FIFO promise.
+- After: [`20261123-094509-119-rounds.csv`](../results/after-fix/concurrent-ai-turns-20261123-094509-119-rounds.csv): **60/60 `correct=true`**, with controlled 409 then explicit sequential retry.
+- Regression: [`20261123-104153-350-rounds.csv`](../results/regression/concurrent-ai-turns-20261123-104153-350-rounds.csv): **4/4** correct, with two cases per mode.
 
 ## Limitations
 

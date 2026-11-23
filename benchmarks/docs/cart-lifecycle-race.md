@@ -1,6 +1,6 @@
 # Cart Lifecycle — Checkout vs Mutation
 
-[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md)
+[Benchmark index](../README.md) · [Quantitative report](../../../../../../../../Downloads/ai-bistro-ordering-reviewed-readmes/benchmarks/reports/concurrency-performance-analysis.md)
 
 ## Question and invariants
 
@@ -21,13 +21,13 @@ The runner also attempts a **late mutation** following successful checkout, then
 # Full historic after-fix configuration: -Repeats 30 (30 per mode, 90 rounds)
 ```
 
-Runner: [`run-cart-lifecycle-race.ps1`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scripts/run-cart-lifecycle-race.ps1). Scenario: [`cart-lifecycle-race.js`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/scenarios/cart-lifecycle-race.js). Requires local seeded benchmark PostgreSQL and k6; no real LLM calls.
+Runner: [`run-cart-lifecycle-race.ps1`](../scripts/run-cart-lifecycle-race.ps1). Scenario: [`cart-lifecycle-race.js`](../scenarios/cart-lifecycle-race.js). Requires local seeded benchmark PostgreSQL and k6; no real LLM calls.
 
 ## Evidence
 
-- Before: [`20261123-010658-637-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/before-fix/cart-lifecycle-20261123-010658-637-rounds.csv): **6 diagnostic rounds** (2 per mode). All were marked `correct=false`, but the original harness misclassified some otherwise valid late-rejection cases. There was **one observed HTTP 500** for an empty-cart checkout. Therefore this is *not* a reliable 0/6 backend-correctness baseline.
-- After: [`20261123-011239-579-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/after-fix/cart-lifecycle-20261123-011239-579-rounds.csv): **90/90 correct**, 30 per mutation mode; empty-cart checkout was mapped to controlled HTTP 400.
-- Regression: [`20261123-024149-617-rounds.csv`](../../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/results/regression/cart-lifecycle-20261123-024149-617-rounds.csv): **30/30 correct** (10 per mode), following later database context changes.
+- Before: [`20261123-010658-637-rounds.csv`](../results/before-fix/cart-lifecycle-20261123-010658-637-rounds.csv): **6 diagnostic rounds** (2 per mode). All were marked `correct=false`, but the original harness misclassified some otherwise valid late-rejection cases. There was **one observed HTTP 500** for an empty-cart checkout. Therefore this is *not* a reliable 0/6 backend-correctness baseline.
+- After: [`20261123-011239-579-rounds.csv`](../results/after-fix/cart-lifecycle-20261123-011239-579-rounds.csv): **90/90 correct**, 30 per mutation mode; empty-cart checkout was mapped to controlled HTTP 400.
+- Regression: [`20261123-024149-617-rounds.csv`](../results/regression/cart-lifecycle-20261123-024149-617-rounds.csv): **30/30 correct** (10 per mode), following later database context changes.
 
 The before/after are intentionally described asymmetrically because the original classification defect was in **test logic**, while the empty-cart 500 was a genuine **HTTP error-mapping defect**.
 

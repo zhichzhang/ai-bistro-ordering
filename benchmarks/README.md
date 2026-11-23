@@ -1,6 +1,6 @@
 # Backend Benchmarks
 
-This directory contains reproducible, **local-only** backend correctness and performance tests for AI Bistro Ordering. Each experiment has a detailed protocol under [`docs/`](docs/), and its observed results are analyzed in the [quantitative report](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md). Existing CSV files are kept unchanged.
+This directory contains reproducible, **local-only** backend correctness and performance tests for AI Bistro Ordering. Each experiment has a detailed protocol under [`docs/`](docs/), and its observed results are analyzed in the [quantitative report](reports/concurrency-performance-analysis.md). Existing CSV files are kept unchanged.
 
 ## Safety and prerequisites
 
@@ -28,11 +28,11 @@ In another shell, from the **repository root**, export the same test token when 
 
 | Scenario | Purpose | Runner | Documentation |
 | --- | --- | --- | --- |
-| Duplicate checkout | Only one successful checkout per cart under contended requests | `run-duplicate-checkout.ps1` | [Duplicate checkout](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/docs/duplicate-checkout.md) |
-| Cart lifecycle race | Checkout racing with add/update/clear and stale mutation | `run-cart-lifecycle-race.ps1` | [Cart lifecycle](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/docs/cart-lifecycle-race.md) |
-| AI vs checkout | Delay an AI turn until after checkout, then ensure it cannot mutate a submitted cart | `run-ai-checkout-race.ps1` | [AI vs checkout](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/docs/ai-checkout-race.md) |
-| Concurrent AI turns | Same-session overlap, controlled rejection and sequential retry | `run-concurrent-ai-turns.ps1` | [Concurrent AI turns](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/docs/concurrent-ai-turns.md) |
-| Multi-kiosk ordering | Independent carts and sessions at 5–100 simultaneous kiosks | `run-multi-kiosk-ordering.ps1` | [Multi-kiosk](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/docs/multi-kiosk-ordering.md) |
+| Duplicate checkout | Only one successful checkout per cart under contended requests | `run-duplicate-checkout.ps1` | [Duplicate checkout](docs/duplicate-checkout.md) |
+| Cart lifecycle race | Checkout racing with add/update/clear and stale mutation | `run-cart-lifecycle-race.ps1` | [Cart lifecycle](docs/cart-lifecycle-race.md) |
+| AI vs checkout | Delay an AI turn until after checkout, then ensure it cannot mutate a submitted cart | `run-ai-checkout-race.ps1` | [AI vs checkout](docs/ai-checkout-race.md) |
+| Concurrent AI turns | Same-session overlap, controlled rejection and sequential retry | `run-concurrent-ai-turns.ps1` | [Concurrent AI turns](docs/concurrent-ai-turns.md) |
+| Multi-kiosk ordering | Independent carts and sessions at 5–100 simultaneous kiosks | `run-multi-kiosk-ordering.ps1` | [Multi-kiosk](docs/multi-kiosk-ordering.md) |
 
 Run examples:
 
@@ -65,4 +65,4 @@ Use CSV business assertions, not solely HTTP status or aggregate k6 `http_req_fa
 | Concurrent AI turns | Add→Clear semantic order wrong in 30/30 controlled cases | 60/60 correct with rejection + explicit retry | 4/4 correct |
 | Multi-kiosk ordering | 58/555 completed workflows | 555/555 completed workflows | — |
 
-The [full report](../../../../../../../Downloads/ai-bistro-ordering-benchmark-docs/benchmarks/reports/concurrency-performance-analysis.md) defines the denominators, shows results by concurrency level, identifies run IDs, and describes limitations. These are **deterministic mock-LLM, wave-based local experiments**, not production capacity measurements.
+The [full report](reports/concurrency-performance-analysis.md) defines the denominators, shows results by concurrency level, identifies run IDs, and describes limitations. These are **deterministic mock-LLM, wave-based local experiments**, not production capacity measurements.
