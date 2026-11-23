@@ -32,8 +32,6 @@ Its central design choice is to **separate LLM interpretation from application s
   <a href="https://www.youtube.com/shorts/E6LAJtAj_kY">Watch the AI Bistro Ordering demo on YouTube</a>
 </p>
 
-[Project write-up](https://zhichzhang.dev/2026-07-17/ai-bistro-ordering)
-
 [**MenuMuse**](https://menumuse.app.space/) is a separately implemented browser edition adapted from this project. It retains the distinction between AI interpretation and trusted cart execution, but uses React and DeepSpace instead of this repository's Expo and Express/Prisma backend. [MenuMuse source](https://github.com/zhichzhang/menumuse).
 
 <details>
@@ -165,6 +163,8 @@ The frontend's `ClarificationDrawer` displays candidate products as selectable b
 
 `CartService` owns cart mutations and pricing checks. Menu-item IDs, selected modifiers, and quantity changes are verified against persisted product data. Actions in a compound message are processed in order, with refreshed cart context available to later actions. The response records errors or partial failures rather than assuming every proposed action succeeded.
 
+For a broader explanation of the design and implementation, see the [project write-up](https://zhichzhang.dev/2026-07-17/ai-bistro-ordering).
+
 ## Cart state and checkout
 
 Two cart lines are equivalent only when they refer to the same menu item and normalized modifier configuration. The cart service constructs a canonical identity from these values, then merges quantities for equivalent lines. Database-backed cart transactions use row locking to coordinate mutations to an individual cart.
@@ -175,7 +175,7 @@ Modifier choices are stored as structured records with `price_delta_cents` value
 
 ## Persistence
 
-The PostgreSQL schema is defined in [`apps/server/prisma/schema.prisma`](apps/server/prisma/schema.prisma); migrations are in [`apps/server/prisma/migrations`](apps/server/prisma/migrations).
+The PostgreSQL schema is defined in [`apps/server/prisma/schema.prisma`](apps/server/prisma/schema.prisma); versioned SQL migrations are in [`apps/server/prisma/migrations`](apps/server/prisma/migrations). 
 
 | Domain | Stored data |
 | --- | --- |
@@ -184,7 +184,7 @@ The PostgreSQL schema is defined in [`apps/server/prisma/schema.prisma`](apps/se
 | Conversation | Chat sessions and user/assistant messages |
 | Orchestration | Normalized actions, dependencies, references, resolved item IDs and execution status |
 
-The menu catalogue is defined in [`packages/shared/menu.json`](packages/shared/menu.json). The seed script in `apps/server/src/scripts/ingestion.script.ts` imports catalogue data and modifier pricing into the database.
+The seed inputs are [`packages/shared/menu.json`](packages/shared/menu.json) for the menu catalogue and [`packages/shared/menu-pricing.json`](packages/shared/menu-pricing.json) for modifier surcharges and add-ons. The script at `apps/server/src/scripts/ingestion.script.ts` imports these into the database. Both files must be present before running ingestion.
 
 ## API
 
@@ -243,14 +243,26 @@ apps/
 packages/
   shared/
     menu.json           # Menu catalogue
-    schema.sql          # SQL schema reference
+    menu-pricing.json   # Modifier surcharges and add-ons
 ```
 
 ## Local development
 
 **Prerequisites:** Node.js and npm, a PostgreSQL database, and an API key for the configured LLM provider. The Expo app and Express server have separate `package.json` files and must be started separately.
 
-### 1. Configure the server
+### 1. Create a PostgreSQL database
+
+Create an empty PostgreSQL database using your preferred provider (for example, a new Supabase project or a local PostgreSQL instance). Record its **database name, host, port, username, and password** to construct the connection URLs below. For a local PostgreSQL installation, one way to create a database is:
+
+```bash
+createdb -U postgres ai_bistro_ordering
+```
+
+If your provider creates a database automatically, do **not** run `createdb`; simply use the connection details it provides. For Supabase, copy the PostgreSQL connection details from the project's database connection settings, and use the provider-recommended direct/session connection for migration operations. Ensure the connection is accessible from the computer running Prisma.
+
+The database tables, constraints, functions, and triggers are managed through the versioned migrations in `apps/server/prisma/migrations/`. There is no separate `packages/shared/schema.sql` setup step.
+
+### 2. Configure the server
 
 From the repository root:
 
@@ -275,7 +287,7 @@ OPENAI_API_KEY=
 
 `DIRECT_URL` is the connection used for Prisma migrations, falling back to `DATABASE_URL` when unset. For Gemini, set `LLM_PROVIDER=gemini` and provide `GEMINI_API_KEY` instead. The API key belongs on the server, not in the Expo application's public environment variables. In production, the server restricts browser origins using the optional comma-separated `CORS_ORIGINS` setting.
 
-### 2. Initialize the database and seed the menu
+### 3. Create tables and seed the menu
 
 ```bash
 # From apps/server
@@ -284,9 +296,11 @@ npm run db:deploy
 npm run ingest
 ```
 
-**Repository limitation:** the current `ingestion.script.ts` also reads `packages/shared/menu-pricing.json`, but **that file is absent from the supplied project archive**. A clean seed will therefore fail until the expected pricing configuration is restored. Do not create arbitrary pricing values: use the project's intended modifier surcharge and add-on definitions. The Prisma migration command above assumes a fresh database. If the database already contains the original tables, review the baseline migration and existing data before running migrations; the repository provides `npm run db:baseline` for recording the initial schema as applied.
+`npm run db:deploy` applies the versioned migrations to the empty database. `npm run ingest` then loads the menu and modifier configuration. These commands do **not** create the PostgreSQL database itself: create that first in Step 1.
 
-### 3. Start the API
+Before running ingestion, verify that both `packages/shared/menu.json` and `packages/shared/menu-pricing.json` are present. If an existing database already contains tables, **do not** reinitialize it as a fresh database: review the migration history and data first. The repository provides `npm run db:baseline` to mark the initial schema as applied when appropriate; it is not a substitute for verifying that the actual schema matches.
+
+### 4. Start the API
 
 ```bash
 # From apps/server
@@ -295,7 +309,7 @@ npm run dev
 
 The server listens on `http://localhost:3000`, with routes under `/api`.
 
-### 4. Configure and start the Expo app
+### 5. Configure and start the Expo app
 
 In a second terminal:
 
@@ -339,7 +353,6 @@ Use `npm test` for watch mode. The database connectivity test runs only when `DA
 - Checkout confirms a simulated order, not a payment transaction; restaurant fulfillment is not implemented.
 - The repository does not implement customer authentication or production deployment automation.
 - The separate MenuMuse web edition has its own authenticated user records, order history, server actions and deployment configuration. These are not features of this Expo/Express repository.
-- The missing `menu-pricing.json` seed dependency must be resolved before the documented fresh-database ingestion can succeed.
 
 ## License
 
