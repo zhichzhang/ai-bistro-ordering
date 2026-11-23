@@ -1,16 +1,38 @@
 # AI Bistro Ordering
 
+
 <p>
+  <!-- Language & Frontend -->
   <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/React_Native-0.81-61DAFB?logo=react&logoColor=black" alt="React Native" />
   <img src="https://img.shields.io/badge/Expo-54-000020?logo=expo&logoColor=white" alt="Expo" />
-  <img src="https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white" alt="Express" />
-  <img src="https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white" alt="Prisma" />
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/OpenAI%20%2F%20Gemini-LLM-5865F2" alt="OpenAI and Gemini" />
   <img src="https://img.shields.io/badge/Zustand-5-443E38" alt="Zustand" />
+
+  <!-- Backend & Database -->
+  <img src="https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white" alt="Express 5" />
+  <img src="https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white" alt="Prisma 7" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
+
+  <!-- AI -->
+  <img src="https://img.shields.io/badge/OpenAI-412991?logo=openai&logoColor=white" alt="OpenAI" />
+  <img src="https://img.shields.io/badge/Gemini-8E75B2?logo=googlegemini&logoColor=white" alt="Gemini" />
+
+  <!-- Testing -->
   <img src="https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white" alt="Vitest" />
+  <img src="https://img.shields.io/badge/Supertest-API_Testing-333333" alt="Supertest" />
+  <img src="https://img.shields.io/badge/Integration-Testing-2E7D32" alt="Integration Testing" />
+
+  <!-- Load & Performance Testing -->
+  <img src="https://img.shields.io/badge/Grafana_k6-Load_Testing-7D64FF?logo=k6&logoColor=white" alt="Grafana k6" />
+  <img src="https://img.shields.io/badge/Performance-Benchmarking-007ACC" alt="Performance Benchmarking" />
+
+  <!-- Cloud & Infrastructure -->
+  <img src="https://img.shields.io/badge/Google_Cloud-4285F4?logo=googlecloud&logoColor=white" alt="Google Cloud" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker" />
 </p>
+
 
 AI Bistro Ordering is a full-stack restaurant ordering application built with React Native, Expo, and an Express API. Guests can explore the menu, customize items, manage their cart, and place orders using either direct interactions or natural language.
 
